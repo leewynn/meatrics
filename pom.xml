@@ -3,13 +3,22 @@
     <modelVersion>4.0.0</modelVersion>
     <!-- Project from https://start.vaadin.com/e36d7b7e-420c-47e5-b5ca-3b3be600d642 -->
     <groupId>com.example</groupId>
-    <artifactId>app</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>meatrics</artifactId>
+    <version>0.1</version>
     <packaging>jar</packaging>
     
     <properties>
         <java.version>21</java.version>
         <vaadin.version>24.9.4</vaadin.version>
+        <jooq.version>3.20.8</jooq.version>
+
+        <!-- Database configuration (matches application.properties defaults) -->
+        <!-- Override with -Ddb.name=value or environment variables -->
+        <db.host>localhost</db.host>
+        <db.port>5432</db.port>
+        <db.name>meatrics</db.name>
+        <db.username>postgres</db.username>
+        <db.password>password</db.password>
     </properties>
     
     <parent>
@@ -41,12 +50,26 @@
             <artifactId>vaadin-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jooq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq-codegen</artifactId>
+            <version>${jooq.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -54,13 +77,46 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+
     <build>
         <defaultGoal>spring-boot:run</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>sql-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>42.7.4</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <driver>org.postgresql.Driver</driver>
+                    <url>jdbc:postgresql://${db.host}:${db.port}/postgres</url>
+                    <username>${db.username}</username>
+                    <password>${db.password}</password>
+                    <autocommit>true</autocommit>
+                    <onError>continue</onError>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>create-database</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>execute</goal>
+                        </goals>
+                        <configuration>
+                            <sqlCommand>CREATE DATABASE ${db.name}</sqlCommand>
+                            <onError>continue</onError>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>com.vaadin</groupId>
@@ -74,10 +130,194 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Liquibase and jOOQ plugins configured in profiles below -->
         </plugins>
     </build>
     
     <profiles>
+        <!-- Profile to run Liquibase migrations only -->
+        <profile>
+            <id>liquibase</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.liquibase</groupId>
+                        <artifactId>liquibase-maven-plugin</artifactId>
+                        <version>4.28.0</version>
+                        <configuration>
+                            <changeLogFile>src/main/resources/db/changelog/db.changelog-master.xml</changeLogFile>
+                            <url>jdbc:postgresql://${db.host}:${db.port}/${db.name}</url>
+                            <username>${db.username}</username>
+                            <password>${db.password}</password>
+                            <driver>org.postgresql.Driver</driver>
+                            <verbose>true</verbose>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>update</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>42.7.4</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile to generate jOOQ classes only -->
+        <profile>
+            <id>jooq</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jooq</groupId>
+                        <artifactId>jooq-codegen-maven</artifactId>
+                        <version>${jooq.version}</version>
+                        <configuration>
+                            <jdbc>
+                                <driver>org.postgresql.Driver</driver>
+                                <url>jdbc:postgresql://${db.host}:${db.port}/${db.name}</url>
+                                <user>${db.username}</user>
+                                <password>${db.password}</password>
+                            </jdbc>
+                            <generator>
+                                <database>
+                                    <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                                    <includes>.*</includes>
+                                    <excludes>databasechangelog.*</excludes>
+                                    <inputSchema>public</inputSchema>
+                                </database>
+                                <target>
+                                    <packageName>com.meatrics.generated</packageName>
+                                    <directory>src/main/java</directory>
+                                </target>
+                            </generator>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>42.7.4</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.jooq</groupId>
+                                <artifactId>jooq-meta</artifactId>
+                                <version>${jooq.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.jooq</groupId>
+                                <artifactId>jooq-codegen</artifactId>
+                                <version>${jooq.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile to run both Liquibase and jOOQ -->
+        <profile>
+            <id>db-all</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.liquibase</groupId>
+                        <artifactId>liquibase-maven-plugin</artifactId>
+                        <version>4.28.0</version>
+                        <configuration>
+                            <changeLogFile>src/main/resources/db/changelog/db.changelog-master.xml</changeLogFile>
+                            <url>jdbc:postgresql://${db.host}:${db.port}/${db.name}</url>
+                            <username>${db.username}</username>
+                            <password>${db.password}</password>
+                            <driver>org.postgresql.Driver</driver>
+                            <verbose>true</verbose>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>update</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>42.7.4</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.jooq</groupId>
+                        <artifactId>jooq-codegen-maven</artifactId>
+                        <version>${jooq.version}</version>
+                        <configuration>
+                            <jdbc>
+                                <driver>org.postgresql.Driver</driver>
+                                <url>jdbc:postgresql://${db.host}:${db.port}/${db.name}</url>
+                                <user>${db.username}</user>
+                                <password>${db.password}</password>
+                            </jdbc>
+                            <generator>
+                                <database>
+                                    <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                                    <includes>.*</includes>
+                                    <excludes>databasechangelog.*</excludes>
+                                    <inputSchema>public</inputSchema>
+                                </database>
+                                <target>
+                                    <packageName>com.meatrics.generated</packageName>
+                                    <directory>src/main/java</directory>
+                                </target>
+                            </generator>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>42.7.4</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.jooq</groupId>
+                                <artifactId>jooq-meta</artifactId>
+                                <version>${jooq.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.jooq</groupId>
+                                <artifactId>jooq-codegen</artifactId>
+                                <version>${jooq.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>production</id>
             <dependencies>

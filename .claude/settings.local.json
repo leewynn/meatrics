@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:vaadin.com)",
+      "Bash(git -C /mnt/d/dev/meatrics log --oneline -10)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
