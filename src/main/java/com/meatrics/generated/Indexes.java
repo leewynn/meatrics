@@ -4,8 +4,12 @@
 package com.meatrics.generated;
 
 
+import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
+import com.meatrics.generated.tables.PricingSessionLineItems;
+import com.meatrics.generated.tables.PricingSessions;
+import com.meatrics.generated.tables.ProductCosts;
 
 import org.jooq.Index;
 import org.jooq.OrderField;
@@ -23,6 +27,7 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index IDX_CUSTOMERS_CODE = Internal.createIndex(DSL.name("idx_customers_code"), Customers.CUSTOMERS, new OrderField[] { Customers.CUSTOMERS.CUSTOMER_CODE }, false);
     public static final Index IDX_IMPORT_SUMMARY_FILENAME = Internal.createIndex(DSL.name("idx_import_summary_filename"), ImportSummary.IMPORT_SUMMARY, new OrderField[] { ImportSummary.IMPORT_SUMMARY.FILENAME }, false);
     public static final Index IDX_IMPORT_SUMMARY_IMPORT_DATE = Internal.createIndex(DSL.name("idx_import_summary_import_date"), ImportSummary.IMPORT_SUMMARY, new OrderField[] { ImportSummary.IMPORT_SUMMARY.IMPORT_DATE }, false);
     public static final Index IDX_IMPORTED_LINE_ITEMS_CUSTOMER_CODE = Internal.createIndex(DSL.name("idx_imported_line_items_customer_code"), ImportedLineItems.IMPORTED_LINE_ITEMS, new OrderField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.CUSTOMER_CODE }, false);
@@ -31,4 +36,10 @@ public class Indexes {
     public static final Index IDX_IMPORTED_LINE_ITEMS_INVOICE_NUMBER = Internal.createIndex(DSL.name("idx_imported_line_items_invoice_number"), ImportedLineItems.IMPORTED_LINE_ITEMS, new OrderField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.INVOICE_NUMBER }, false);
     public static final Index IDX_IMPORTED_LINE_ITEMS_PRODUCT_CODE = Internal.createIndex(DSL.name("idx_imported_line_items_product_code"), ImportedLineItems.IMPORTED_LINE_ITEMS, new OrderField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.PRODUCT_CODE }, false);
     public static final Index IDX_IMPORTED_LINE_ITEMS_TRANSACTION_DATE = Internal.createIndex(DSL.name("idx_imported_line_items_transaction_date"), ImportedLineItems.IMPORTED_LINE_ITEMS, new OrderField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.TRANSACTION_DATE }, false);
+    public static final Index IDX_PRICING_SESSION_LINE_ITEMS_COMPOSITE = Internal.createIndex(DSL.name("idx_pricing_session_line_items_composite"), PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, new OrderField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.SESSION_ID, PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.CUSTOMER_CODE, PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.PRODUCT_CODE }, false);
+    public static final Index IDX_PRICING_SESSION_LINE_ITEMS_SESSION_ID = Internal.createIndex(DSL.name("idx_pricing_session_line_items_session_id"), PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, new OrderField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.SESSION_ID }, false);
+    public static final Index IDX_PRICING_SESSIONS_SESSION_NAME = Internal.createIndex(DSL.name("idx_pricing_sessions_session_name"), PricingSessions.PRICING_SESSIONS, new OrderField[] { PricingSessions.PRICING_SESSIONS.SESSION_NAME }, false);
+    public static final Index IDX_PRODUCT_COSTS_ACTIVE = Internal.createIndex(DSL.name("idx_product_costs_active"), ProductCosts.PRODUCT_COSTS, new OrderField[] { ProductCosts.PRODUCT_COSTS.IS_ACTIVE }, false);
+    public static final Index IDX_PRODUCT_COSTS_CODE = Internal.createIndex(DSL.name("idx_product_costs_code"), ProductCosts.PRODUCT_COSTS, new OrderField[] { ProductCosts.PRODUCT_COSTS.PRODUCT_CODE }, false);
+    public static final Index IDX_PRODUCT_COSTS_GROUP = Internal.createIndex(DSL.name("idx_product_costs_group"), ProductCosts.PRODUCT_COSTS, new OrderField[] { ProductCosts.PRODUCT_COSTS.PRIMARY_GROUP }, false);
 }

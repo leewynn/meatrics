@@ -1,0 +1,246 @@
+package com.meatrics.pricing;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Service for calculating customer ratings using different algorithms
+ */
+@Service
+public class CustomerRatingService {
+
+    private static final Logger log = LoggerFactory.getLogger(CustomerRatingService.class);
+
+    private final ImportedLineItemRepository importedLineItemRepository;
+    private final CustomerRepository customerRepository;
+
+    public CustomerRatingService(ImportedLineItemRepository importedLineItemRepository,
+                                 CustomerRepository customerRepository) {
+        this.importedLineItemRepository = importedLineItemRepository;
+        this.customerRepository = customerRepository;
+    }
+
+    /**
+     * Calculate all three rating algorithms for a customer
+     */
+    public CustomerRatingResult calculateRatings(String customerCode) {
+        // Get all line items for this customer
+        List<ImportedLineItem> items = importedLineItemRepository.findAll().stream()
+                .filter(item -> customerCode.equals(item.getCustomerCode()))
+                .collect(Collectors.toList());
+
+        if (items.isEmpty()) {
+            return new CustomerRatingResult(0, 0, 0);
+        }
+
+        // Calculate totals for this customer
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal totalCost = BigDecimal.ZERO;
+
+        for (ImportedLineItem item : items) {
+            if (item.getAmount() != null) {
+                totalAmount = totalAmount.add(item.getAmount());
+            }
+            if (item.getCost() != null) {
+                totalCost = totalCost.add(item.getCost());
+            }
+        }
+
+        BigDecimal grossProfit = totalAmount.subtract(totalCost);
+        BigDecimal gpPercentage = BigDecimal.ZERO;
+        if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
+            gpPercentage = grossProfit.divide(totalAmount, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
+        }
+
+        // Calculate the three ratings
+        int originalRating = calculateOriginalRating(totalAmount, gpPercentage);
+        int modifiedRating = calculateModifiedRating(totalAmount, gpPercentage);
+        int claudeRating = calculateClaudeRating(customerCode, grossProfit, totalAmount);
+
+        return new CustomerRatingResult(originalRating, modifiedRating, claudeRating);
+    }
+
+    /**
+     * Original user formula: sqrt((amount / 1000 * GP%) * 100)
+     */
+    private int calculateOriginalRating(BigDecimal amount, BigDecimal gpPercentage) {
+        // amount / 1000
+        BigDecimal amountPart = amount.divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
+
+        // (amount / 1000) * GP%
+        BigDecimal product = amountPart.multiply(gpPercentage);
+
+        // sqrt(product * 100)
+        double result = Math.sqrt(product.multiply(new BigDecimal("100")).doubleValue());
+
+        return (int) Math.round(result);
+    }
+
+    /**
+     * Modified formula (additive instead of multiplicative): (amount / 1000) + (GP% * 10)
+     * This addresses the zero-multiplication problem
+     */
+    private int calculateModifiedRating(BigDecimal amount, BigDecimal gpPercentage) {
+        // amount / 1000
+        BigDecimal amountPart = amount.divide(new BigDecimal("1000"), 2, RoundingMode.HALF_UP);
+
+        // GP% * 10
+        BigDecimal gpPart = gpPercentage.multiply(new BigDecimal("10"));
+
+        // Sum them
+        BigDecimal result = amountPart.add(gpPart);
+
+        return result.intValue();
+    }
+
+    /**
+     * Claude's suggested formula: (Gross_Profit_Dollars × 0.7) + (Revenue_Percentile × 0.3)
+     */
+    private int calculateClaudeRating(String customerCode, BigDecimal grossProfit, BigDecimal revenue) {
+        // Get all customers' revenue for percentile calculation
+        Map<String, BigDecimal> allCustomerRevenues = new HashMap<>();
+
+        for (ImportedLineItem item : importedLineItemRepository.findAll()) {
+            String code = item.getCustomerCode();
+            if (code != null && !code.trim().isEmpty()) {
+                BigDecimal amount = item.getAmount() != null ? item.getAmount() : BigDecimal.ZERO;
+                allCustomerRevenues.merge(code, amount, BigDecimal::add);
+            }
+        }
+
+        // Calculate revenue percentile (0-100)
+        int revenuePercentile = calculatePercentile(revenue, allCustomerRevenues.values());
+
+        // Weighted formula: (GP × 0.7) + (Revenue_Percentile × 0.3)
+        BigDecimal gpPart = grossProfit.multiply(new BigDecimal("0.7"));
+        BigDecimal revenuePart = new BigDecimal(revenuePercentile).multiply(new BigDecimal("0.3"));
+
+        BigDecimal result = gpPart.add(revenuePart);
+
+        return result.intValue();
+    }
+
+    /**
+     * Calculate percentile rank (0-100) for a value within a collection
+     */
+    private int calculatePercentile(BigDecimal value, Collection<BigDecimal> allValues) {
+        if (allValues.isEmpty()) {
+            return 0;
+        }
+
+        List<BigDecimal> sorted = allValues.stream()
+                .sorted()
+                .collect(Collectors.toList());
+
+        int countBelow = 0;
+        for (BigDecimal v : sorted) {
+            if (v.compareTo(value) < 0) {
+                countBelow++;
+            }
+        }
+
+        // Percentile = (count below / total) * 100
+        double percentile = (countBelow * 100.0) / sorted.size();
+
+        return (int) Math.round(percentile);
+    }
+
+    /**
+     * Result holder for the three rating calculations
+     */
+    public static class CustomerRatingResult {
+        private final int originalRating;
+        private final int modifiedRating;
+        private final int claudeRating;
+
+        public CustomerRatingResult(int originalRating, int modifiedRating, int claudeRating) {
+            this.originalRating = originalRating;
+            this.modifiedRating = modifiedRating;
+            this.claudeRating = claudeRating;
+        }
+
+        public int getOriginalRating() {
+            return originalRating;
+        }
+
+        public int getModifiedRating() {
+            return modifiedRating;
+        }
+
+        public int getClaudeRating() {
+            return claudeRating;
+        }
+
+        public String getFormattedRatings() {
+            return String.format("original: %d | modified: %d | claude: %d",
+                    originalRating, modifiedRating, claudeRating);
+        }
+    }
+
+    /**
+     * Calculate and save ratings for all customers (runs in background)
+     */
+    @Async
+    public void recalculateAndSaveAllCustomerRatings() {
+        log.info("Starting customer rating recalculation...");
+        long startTime = System.currentTimeMillis();
+
+        List<Customer> allCustomers = customerRepository.findAll();
+        int count = 0;
+
+        for (Customer customer : allCustomers) {
+            try {
+                CustomerRatingResult ratings = calculateRatings(customer.getCustomerCode());
+                String formattedRatings = ratings.getFormattedRatings();
+                customer.setCustomerRating(formattedRatings);
+                customerRepository.save(customer);
+                count++;
+            } catch (Exception e) {
+                log.warn("Failed to calculate rating for customer {}: {}",
+                        customer.getCustomerCode(), e.getMessage());
+            }
+        }
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("Customer rating recalculation complete. Updated {} of {} customers in {}ms",
+                count, allCustomers.size(), duration);
+    }
+
+    /**
+     * Calculate and save ratings for all customers (synchronous version for when needed)
+     */
+    public int recalculateAndSaveAllCustomerRatingsSync() {
+        log.info("Starting customer rating recalculation (synchronous)...");
+        long startTime = System.currentTimeMillis();
+
+        List<Customer> allCustomers = customerRepository.findAll();
+        int count = 0;
+
+        for (Customer customer : allCustomers) {
+            try {
+                CustomerRatingResult ratings = calculateRatings(customer.getCustomerCode());
+                String formattedRatings = ratings.getFormattedRatings();
+                customer.setCustomerRating(formattedRatings);
+                customerRepository.save(customer);
+                count++;
+            } catch (Exception e) {
+                log.warn("Failed to calculate rating for customer {}: {}",
+                        customer.getCustomerCode(), e.getMessage());
+            }
+        }
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("Customer rating recalculation complete. Updated {} of {} customers in {}ms",
+                count, allCustomers.size(), duration);
+
+        return count;
+    }
+}

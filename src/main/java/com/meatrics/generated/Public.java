@@ -4,9 +4,15 @@
 package com.meatrics.generated;
 
 
+import com.meatrics.generated.tables.CostImportSummary;
+import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
+import com.meatrics.generated.tables.PricingSessionLineItems;
+import com.meatrics.generated.tables.PricingSessions;
+import com.meatrics.generated.tables.ProductCosts;
 import com.meatrics.generated.tables.VCustomers;
+import com.meatrics.generated.tables.VGroupedLineItems;
 import com.meatrics.generated.tables.VInvoiceLineItems;
 import com.meatrics.generated.tables.VInvoices;
 import com.meatrics.generated.tables.VProducts;
@@ -34,6 +40,16 @@ public class Public extends SchemaImpl {
     public static final Public PUBLIC = new Public();
 
     /**
+     * The table <code>public.cost_import_summary</code>.
+     */
+    public final CostImportSummary COST_IMPORT_SUMMARY = CostImportSummary.COST_IMPORT_SUMMARY;
+
+    /**
+     * The table <code>public.customers</code>.
+     */
+    public final Customers CUSTOMERS = Customers.CUSTOMERS;
+
+    /**
      * The table <code>public.import_summary</code>.
      */
     public final ImportSummary IMPORT_SUMMARY = ImportSummary.IMPORT_SUMMARY;
@@ -44,9 +60,31 @@ public class Public extends SchemaImpl {
     public final ImportedLineItems IMPORTED_LINE_ITEMS = ImportedLineItems.IMPORTED_LINE_ITEMS;
 
     /**
+     * Line items within a pricing session, grouped by customer and product
+     */
+    public final PricingSessionLineItems PRICING_SESSION_LINE_ITEMS = PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS;
+
+    /**
+     * Tracks pricing review sessions where users can modify and save pricing
+     * data
+     */
+    public final PricingSessions PRICING_SESSIONS = PricingSessions.PRICING_SESSIONS;
+
+    /**
+     * The table <code>public.product_costs</code>.
+     */
+    public final ProductCosts PRODUCT_COSTS = ProductCosts.PRODUCT_COSTS;
+
+    /**
      * The table <code>public.v_customers</code>.
      */
     public final VCustomers V_CUSTOMERS = VCustomers.V_CUSTOMERS;
+
+    /**
+     * Aggregated line items grouped by customer and product for pricing
+     * sessions view
+     */
+    public final VGroupedLineItems V_GROUPED_LINE_ITEMS = VGroupedLineItems.V_GROUPED_LINE_ITEMS;
 
     /**
      * The table <code>public.v_invoice_line_items</code>.
@@ -79,9 +117,15 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            CostImportSummary.COST_IMPORT_SUMMARY,
+            Customers.CUSTOMERS,
             ImportSummary.IMPORT_SUMMARY,
             ImportedLineItems.IMPORTED_LINE_ITEMS,
+            PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS,
+            PricingSessions.PRICING_SESSIONS,
+            ProductCosts.PRODUCT_COSTS,
             VCustomers.V_CUSTOMERS,
+            VGroupedLineItems.V_GROUPED_LINE_ITEMS,
             VInvoiceLineItems.V_INVOICE_LINE_ITEMS,
             VInvoices.V_INVOICES,
             VProducts.V_PRODUCTS

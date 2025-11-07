@@ -27,14 +27,23 @@ public class PricingImportService {
 
     private final ImportSummaryRepository importSummaryRepository;
     private final ImportedLineItemRepository importedLineItemRepository;
+    private final CustomerRepository customerRepository;
+    private final CustomerRatingService customerRatingService;
+    private final GroupedLineItemRepository groupedLineItemRepository;
 
     // Temporary storage for uploaded files awaiting processing
     private final Map<String, File> uploadedFiles = new HashMap<>();
 
     public PricingImportService(ImportSummaryRepository importSummaryRepository,
-                                ImportedLineItemRepository importedLineItemRepository) {
+                                ImportedLineItemRepository importedLineItemRepository,
+                                CustomerRepository customerRepository,
+                                CustomerRatingService customerRatingService,
+                                GroupedLineItemRepository groupedLineItemRepository) {
         this.importSummaryRepository = importSummaryRepository;
         this.importedLineItemRepository = importedLineItemRepository;
+        this.customerRepository = customerRepository;
+        this.customerRatingService = customerRatingService;
+        this.groupedLineItemRepository = groupedLineItemRepository;
     }
 
     /**
@@ -103,10 +112,16 @@ public class PricingImportService {
         // Save all line items
         importedLineItemRepository.saveAll(lineItems);
 
+        // Create/update customer records from imported line items
+        createOrUpdateCustomers(lineItems);
+
         // Update import summary with final count and status
         summary.setRecordCount(lineItems.size());
         summary.setStatus("COMPLETED");
         importSummaryRepository.save(summary);
+
+        // Recalculate customer ratings in background
+        customerRatingService.recalculateAndSaveAllCustomerRatings();
 
         log.info("Imported {} line items from {}", lineItems.size(), filename);
         return lineItems.size();
@@ -317,5 +332,53 @@ public class PricingImportService {
      */
     public List<ImportedLineItem> getLineItemsByDateRange(LocalDate startDate, LocalDate endDate) {
         return importedLineItemRepository.findByDateRange(startDate, endDate);
+    }
+
+    /**
+     * Get grouped line items (aggregated by customer + product)
+     * Uses database view for efficient aggregation
+     */
+    public List<GroupedLineItem> getGroupedLineItems() {
+        return groupedLineItemRepository.findAll().stream()
+                .map(GroupedLineItem::fromRecord)
+                .toList();
+    }
+
+    /**
+     * Get grouped line items filtered by date range
+     * Queries base table with grouping since view doesn't have transaction_date
+     */
+    public List<GroupedLineItem> getGroupedLineItemsByDateRange(LocalDate startDate, LocalDate endDate) {
+        return groupedLineItemRepository.findByDateRange(startDate, endDate).stream()
+                .map(GroupedLineItem::fromRecord)
+                .toList();
+    }
+
+    /**
+     * Create or update customer records from imported line items
+     */
+    private void createOrUpdateCustomers(List<ImportedLineItem> lineItems) {
+        // Extract unique customers from line items
+        Map<String, String> uniqueCustomers = new HashMap<>();
+        for (ImportedLineItem item : lineItems) {
+            if (item.getCustomerCode() != null && !item.getCustomerCode().trim().isEmpty()) {
+                uniqueCustomers.put(item.getCustomerCode(), item.getCustomerName());
+            }
+        }
+
+        // Create or update each customer
+        for (Map.Entry<String, String> entry : uniqueCustomers.entrySet()) {
+            String customerCode = entry.getKey();
+            String customerName = entry.getValue();
+
+            Customer customer = new Customer();
+            customer.setCustomerCode(customerCode);
+            customer.setCustomerName(customerName);
+
+            customerRepository.save(customer);
+            log.debug("Created/updated customer: {} - {}", customerCode, customerName);
+        }
+
+        log.info("Processed {} unique customers", uniqueCustomers.size());
     }
 }

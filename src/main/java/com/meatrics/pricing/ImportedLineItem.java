@@ -36,6 +36,10 @@ public class ImportedLineItem {
     // Metadata
     private LocalDateTime importDate;
 
+    // Transient fields to track modifications
+    private transient boolean amountModified = false;
+    private transient BigDecimal originalAmount = null;
+
     public ImportedLineItem() {
     }
 
@@ -125,7 +129,19 @@ public class ImportedLineItem {
     }
 
     public void setAmount(BigDecimal amount) {
+        // Store original amount on first modification
+        if (originalAmount == null && this.amount != null) {
+            originalAmount = this.amount;
+        }
         this.amount = amount;
+    }
+
+    public BigDecimal getOriginalAmount() {
+        return originalAmount != null ? originalAmount : amount;
+    }
+
+    public void setOriginalAmount(BigDecimal originalAmount) {
+        this.originalAmount = originalAmount;
     }
 
     public BigDecimal getCost() {
@@ -174,6 +190,73 @@ public class ImportedLineItem {
 
     public void setImportDate(LocalDateTime importDate) {
         this.importDate = importDate;
+    }
+
+    public boolean isAmountModified() {
+        return amountModified;
+    }
+
+    public void setAmountModified(boolean amountModified) {
+        this.amountModified = amountModified;
+    }
+
+    /**
+     * Get formatted cost as a string
+     * Format: $XX.XX
+     */
+    public String getCostFormatted() {
+        if (cost == null) {
+            return "$0.00";
+        }
+        return String.format("$%.2f", cost);
+    }
+
+    /**
+     * Get formatted amount as a string
+     * Format: $XX.XX
+     */
+    public String getAmountFormatted() {
+        if (amount == null) {
+            return "$0.00";
+        }
+        return String.format("$%.2f", amount);
+    }
+
+    /**
+     * Calculate unit sell price (amount / quantity)
+     * Format: $XX.XX
+     */
+    public String getUnitSellPrice() {
+        if (amount == null || quantity == null || quantity.compareTo(BigDecimal.ZERO) == 0) {
+            return "N/A";
+        }
+        BigDecimal unitPrice = amount.divide(quantity, 2, java.math.RoundingMode.HALF_UP);
+        return String.format("$%.2f", unitPrice);
+    }
+
+    /**
+     * Calculate original unit sell price (original amount / quantity)
+     * Format: $XX.XX
+     */
+    public String getOriginalUnitSellPrice() {
+        BigDecimal origAmount = getOriginalAmount();
+        if (origAmount == null || quantity == null || quantity.compareTo(BigDecimal.ZERO) == 0) {
+            return "N/A";
+        }
+        BigDecimal unitPrice = origAmount.divide(quantity, 2, java.math.RoundingMode.HALF_UP);
+        return String.format("$%.2f", unitPrice);
+    }
+
+    /**
+     * Calculate unit cost price (cost / quantity)
+     * Format: $XX.XX
+     */
+    public String getUnitCostPrice() {
+        if (cost == null || quantity == null || quantity.compareTo(BigDecimal.ZERO) == 0) {
+            return "N/A";
+        }
+        BigDecimal unitCost = cost.divide(quantity, 2, java.math.RoundingMode.HALF_UP);
+        return String.format("$%.2f", unitCost);
     }
 
     /**

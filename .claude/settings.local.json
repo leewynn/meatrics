@@ -3,7 +3,14 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:vaadin.com)",
-      "Bash(git -C /mnt/d/dev/meatrics log --oneline -10)"
+      "Bash(git -C /mnt/d/dev/meatrics log --oneline -10)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(pip install:*)",
+      "Bash(java -version:*)",
+      "Bash(chmod:*)",
+      "WebFetch(domain:www.jooq.org)",
+      "Bash(mvn clean compile:*)"
     ],
     "deny": [],
     "ask": []
