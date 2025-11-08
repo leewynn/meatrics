@@ -433,4 +433,130 @@ public class ReportExportService {
         style.setDataFormat(format.getFormat("dd/mm/yyyy"));
         return style;
     }
+
+    /**
+     * Generate Excel file for zero-amount line items
+     *
+     * @param items List of zero-amount items
+     * @param filename Original import filename
+     * @return Excel file as byte array
+     * @throws IOException if file generation fails
+     */
+    public byte[] generateZeroAmountItemsXLS(List<ImportedLineItem> items, String filename) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Zero Amount Items");
+
+            // Create cell styles
+            CellStyle titleStyle = createTitleStyle(workbook);
+            CellStyle headerStyle = createHeaderStyle(workbook);
+            CellStyle currencyStyle = createCurrencyStyle(workbook);
+            CellStyle normalStyle = createNormalStyle(workbook);
+
+            int rowNum = 0;
+
+            // Title row
+            Row titleRow = sheet.createRow(rowNum++);
+            Cell titleCell = titleRow.createCell(0);
+            String title = String.format("Zero Amount Items - %s", filename);
+            titleCell.setCellValue(title);
+            titleCell.setCellStyle(titleStyle);
+
+            // Empty row for spacing
+            rowNum++;
+
+            // Header row
+            Row headerRow = sheet.createRow(rowNum++);
+            String[] headers = {
+                "Invoice #", "Transaction Date", "Customer Code", "Customer Name",
+                "Product Code", "Product Description", "Quantity", "Amount", "Cost"
+            };
+
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Create data rows
+            for (ImportedLineItem item : items) {
+                Row row = sheet.createRow(rowNum++);
+
+                // Invoice #
+                Cell invoiceCell = row.createCell(0);
+                invoiceCell.setCellValue(item.getInvoiceNumber() != null ? item.getInvoiceNumber() : "");
+                invoiceCell.setCellStyle(normalStyle);
+
+                // Transaction Date
+                Cell dateCell = row.createCell(1);
+                if (item.getTransactionDate() != null) {
+                    dateCell.setCellValue(item.getTransactionDate().format(DATE_FORMATTER));
+                } else {
+                    dateCell.setCellValue("");
+                }
+                dateCell.setCellStyle(normalStyle);
+
+                // Customer Code
+                Cell customerCodeCell = row.createCell(2);
+                customerCodeCell.setCellValue(item.getCustomerCode() != null ? item.getCustomerCode() : "");
+                customerCodeCell.setCellStyle(normalStyle);
+
+                // Customer Name
+                Cell customerNameCell = row.createCell(3);
+                customerNameCell.setCellValue(item.getCustomerName() != null ? item.getCustomerName() : "");
+                customerNameCell.setCellStyle(normalStyle);
+
+                // Product Code
+                Cell productCodeCell = row.createCell(4);
+                productCodeCell.setCellValue(item.getProductCode() != null ? item.getProductCode() : "");
+                productCodeCell.setCellStyle(normalStyle);
+
+                // Product Description
+                Cell productDescCell = row.createCell(5);
+                productDescCell.setCellValue(item.getProductDescription() != null ? item.getProductDescription() : "");
+                productDescCell.setCellStyle(normalStyle);
+
+                // Quantity
+                Cell quantityCell = row.createCell(6);
+                if (item.getQuantity() != null) {
+                    quantityCell.setCellValue(item.getQuantity().doubleValue());
+                } else {
+                    quantityCell.setCellValue(0.0);
+                }
+                quantityCell.setCellStyle(normalStyle);
+
+                // Amount
+                Cell amountCell = row.createCell(7);
+                if (item.getAmount() != null) {
+                    amountCell.setCellValue(item.getAmount().doubleValue());
+                } else {
+                    amountCell.setCellValue(0.0);
+                }
+                amountCell.setCellStyle(currencyStyle);
+
+                // Cost
+                Cell costCell = row.createCell(8);
+                if (item.getCost() != null) {
+                    costCell.setCellValue(item.getCost().doubleValue());
+                } else {
+                    costCell.setCellValue(0.0);
+                }
+                costCell.setCellStyle(currencyStyle);
+            }
+
+            // Auto-size columns
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+                // Add extra width for better readability
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            }
+
+            // Write to byte array
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            workbook.write(outputStream);
+
+            log.info("Generated Zero Amount Items XLS with {} rows for file: {}", items.size(), filename);
+
+            return outputStream.toByteArray();
+        }
+    }
 }

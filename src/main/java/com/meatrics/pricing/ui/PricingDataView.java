@@ -1,24 +1,22 @@
 package com.meatrics.pricing.ui;
 
+import com.meatrics.base.ui.AbstractGridView;
 import com.meatrics.pricing.Customer;
 import com.meatrics.pricing.CustomerRatingService;
 import com.meatrics.pricing.CustomerRepository;
 import com.meatrics.pricing.ImportedLineItem;
 import com.meatrics.pricing.PricingImportService;
-import com.vaadin.flow.component.UI;
+import com.meatrics.pricing.ui.component.CustomerEditDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.details.Details;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -42,9 +40,14 @@ import java.util.stream.Collectors;
 @Route("")
 @PageTitle("Pricing Data")
 @Menu(order = 0, icon = "vaadin:table", title = "Pricing Data")
-public class PricingDataView extends Main {
+public class PricingDataView extends AbstractGridView {
 
     private static final String STORAGE_PREFIX = "PricingDataView-column-";
+
+    @Override
+    protected String getStoragePrefix() {
+        return STORAGE_PREFIX;
+    }
 
     private final PricingImportService pricingImportService;
     private final CustomerRepository customerRepository;
@@ -71,7 +74,6 @@ public class PricingDataView extends Main {
     private Checkbox costCheck;
     private Checkbox unitCostPriceCheck;
     private Checkbox grossProfitCheck;
-    private Checkbox outstandingCheck;
 
     public PricingDataView(PricingImportService pricingImportService,
                            CustomerRepository customerRepository,
@@ -282,13 +284,6 @@ public class PricingDataView extends Main {
                 .setResizable(true)
                 .setSortable(true);
 
-        grid.addColumn(ImportedLineItem::getOutstandingAmount)
-                .setHeader("Outstanding")
-                .setKey("outstanding")
-                .setAutoWidth(true)
-                .setResizable(true)
-                .setSortable(true);
-
         // Add footer row for totals
         var footerRow = grid.appendFooterRow();
         footerRow.getCell(grid.getColumnByKey("customerName")).setText("Total:");
@@ -373,17 +368,11 @@ public class PricingDataView extends Main {
             saveColumnVisibility("grossProfit", e.getValue());
         });
 
-        outstandingCheck = new Checkbox("Outstanding", true);
-        outstandingCheck.addValueChangeListener(e -> {
-            dataGrid.getColumnByKey("outstanding").setVisible(e.getValue());
-            saveColumnVisibility("outstanding", e.getValue());
-        });
-
         checkboxLayout.add(
             customerNameCheck, customerRatingCheck, invoiceCheck, dateCheck,
             productCodeCheck, productCheck, quantityCheck,
             amountCheck, unitSellPriceCheck, costCheck, unitCostPriceCheck,
-            grossProfitCheck, outstandingCheck
+            grossProfitCheck
         );
 
         // Wrap in Details component (collapsible)
@@ -515,17 +504,6 @@ public class PricingDataView extends Main {
     }
 
     /**
-     * Save column visibility to browser localStorage
-     */
-    private void saveColumnVisibility(String columnKey, boolean visible) {
-        getElement().executeJs(
-            "localStorage.setItem($0, $1)",
-            STORAGE_PREFIX + columnKey,
-            String.valueOf(visible)
-        );
-    }
-
-    /**
      * Restore column visibility from browser localStorage
      */
     private void restoreColumnVisibility() {
@@ -541,23 +519,6 @@ public class PricingDataView extends Main {
         restoreColumn("cost", costCheck);
         restoreColumn("unitCostPrice", unitCostPriceCheck);
         restoreColumn("grossProfit", grossProfitCheck);
-        restoreColumn("outstanding", outstandingCheck);
-    }
-
-    /**
-     * Restore individual column visibility from localStorage
-     */
-    private void restoreColumn(String columnKey, Checkbox checkbox) {
-        UI ui = UI.getCurrent();
-        getElement().executeJs(
-            "return localStorage.getItem($0)",
-            STORAGE_PREFIX + columnKey
-        ).then(String.class, value -> {
-            if ("false".equals(value)) {
-                ui.access(() -> checkbox.setValue(false)); // This triggers the listener which updates grid and saves
-            }
-            // If true or null, keep default (true)
-        });
     }
 
     private void openCustomerEditDialog(ImportedLineItem item) {
@@ -567,67 +528,9 @@ public class PricingDataView extends Main {
             return;
         }
 
-        Customer customer = customerRepository.findByCustomerCode(customerCode)
-                .orElse(null);
-
-        if (customer == null) {
-            return;
-        }
-
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Edit Customer");
-        dialog.setWidth("500px");
-
-        VerticalLayout dialogLayout = new VerticalLayout();
-        dialogLayout.setSpacing(true);
-        dialogLayout.setPadding(false);
-
-        // Customer code (read-only)
-        TextField customerCodeField = new TextField("Customer Code");
-        customerCodeField.setValue(customer.getCustomerCode());
-        customerCodeField.setReadOnly(true);
-        customerCodeField.setWidthFull();
-
-        // Customer name (read-only)
-        TextField customerNameField = new TextField("Customer Name");
-        customerNameField.setValue(customer.getCustomerName());
-        customerNameField.setReadOnly(true);
-        customerNameField.setWidthFull();
-
-        // Customer rating (stored from last calculation, editable)
-        TextField customerRatingField = new TextField("Customer Rating");
-        if (customer.getCustomerRating() != null && !customer.getCustomerRating().trim().isEmpty()) {
-            customerRatingField.setValue(customer.getCustomerRating());
-        }
-        customerRatingField.setWidthFull();
-        customerRatingField.setHelperText("Auto-calculated during import. Use 'Recalculate All Ratings' button to refresh.");
-
-        // Notes (editable)
-        TextArea notesField = new TextArea("Notes");
-        if (customer.getNotes() != null) {
-            notesField.setValue(customer.getNotes());
-        }
-        notesField.setWidthFull();
-        notesField.setHeight("150px");
-
-        dialogLayout.add(customerCodeField, customerNameField, customerRatingField, notesField);
-
-        // Buttons
-        Button saveButton = new Button("Save", event -> {
-            customer.setCustomerRating(customerRatingField.getValue());
-            customer.setNotes(notesField.getValue());
-            customerRepository.save(customer);
-            dialog.close();
+        customerRepository.findByCustomerCode(customerCode).ifPresent(customer -> {
+            CustomerEditDialog dialog = new CustomerEditDialog(customer, customerRepository);
+            dialog.open(null); // No callback needed for this view
         });
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        Button cancelButton = new Button("Cancel", event -> dialog.close());
-
-        HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
-        buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-        buttonLayout.setWidthFull();
-
-        dialog.add(dialogLayout, buttonLayout);
-        dialog.open();
     }
 }

@@ -1,7 +1,9 @@
 package com.meatrics.pricing;
 
+import com.meatrics.util.ExcelParsingUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,9 +15,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
+
+import static com.meatrics.generated.Tables.IMPORTED_LINE_ITEMS;
 
 /**
  * Service for importing pricing data from Excel files
@@ -25,6 +27,7 @@ public class PricingImportService {
 
     private static final Logger log = LoggerFactory.getLogger(PricingImportService.class);
 
+    private final DSLContext dsl;
     private final ImportSummaryRepository importSummaryRepository;
     private final ImportedLineItemRepository importedLineItemRepository;
     private final CustomerRepository customerRepository;
@@ -34,11 +37,13 @@ public class PricingImportService {
     // Temporary storage for uploaded files awaiting processing
     private final Map<String, File> uploadedFiles = new HashMap<>();
 
-    public PricingImportService(ImportSummaryRepository importSummaryRepository,
+    public PricingImportService(DSLContext dsl,
+                                ImportSummaryRepository importSummaryRepository,
                                 ImportedLineItemRepository importedLineItemRepository,
                                 CustomerRepository customerRepository,
                                 CustomerRatingService customerRatingService,
                                 GroupedLineItemRepository groupedLineItemRepository) {
+        this.dsl = dsl;
         this.importSummaryRepository = importSummaryRepository;
         this.importedLineItemRepository = importedLineItemRepository;
         this.customerRepository = customerRepository;
@@ -70,6 +75,13 @@ public class PricingImportService {
     }
 
     /**
+     * Get uploaded file by filename
+     */
+    public File getUploadedFile(String filename) {
+        return uploadedFiles.get(filename);
+    }
+
+    /**
      * Import all uploaded files
      */
     @Transactional
@@ -81,10 +93,10 @@ public class PricingImportService {
             File file = entry.getValue();
 
             try (InputStream inputStream = new FileInputStream(file)) {
-                int recordCount = importFromInputStream(inputStream, filename);
-                totalRecords += recordCount;
+                ImportSummary summary = importFromInputStream(inputStream, filename);
+                totalRecords += summary.getRecordCount();
 
-                log.info("Imported {} records from file: {}", recordCount, filename);
+                log.info("Imported {} records from file: {}", summary.getRecordCount(), filename);
             }
         }
 
@@ -95,21 +107,79 @@ public class PricingImportService {
     }
 
     /**
-     * Import data from Excel file input stream
+     * Check if any line items in the import already exist in the database.
+     * This method performs pre-import validation to prevent duplicate data.
+     *
+     * @param lineItems List of line items to check
+     * @return List of duplicate descriptions for user feedback
+     */
+    private List<String> checkForDuplicates(List<ImportedLineItem> lineItems) {
+        List<String> duplicates = new ArrayList<>();
+
+        for (ImportedLineItem item : lineItems) {
+            // Query database to see if this exact record already exists
+            // Matches on: customer_code, invoice_number, product_code, transaction_date, quantity, amount
+            boolean exists = dsl.fetchExists(
+                dsl.selectFrom(IMPORTED_LINE_ITEMS)
+                    .where(IMPORTED_LINE_ITEMS.CUSTOMER_CODE.eq(item.getCustomerCode()))
+                    .and(IMPORTED_LINE_ITEMS.INVOICE_NUMBER.eq(item.getInvoiceNumber()))
+                    .and(IMPORTED_LINE_ITEMS.PRODUCT_CODE.eq(item.getProductCode()))
+                    .and(IMPORTED_LINE_ITEMS.TRANSACTION_DATE.eq(item.getTransactionDate()))
+                    .and(IMPORTED_LINE_ITEMS.QUANTITY.eq(item.getQuantity()))
+                    .and(IMPORTED_LINE_ITEMS.AMOUNT.eq(item.getAmount()))
+            );
+
+            if (exists) {
+                duplicates.add(String.format(
+                    "Invoice: %s, Customer: %s, Product: %s, Date: %s, Qty: %s, Amount: %s",
+                    item.getInvoiceNumber(),
+                    item.getCustomerName(),
+                    item.getProductCode(),
+                    item.getTransactionDate(),
+                    item.getQuantity(),
+                    item.getAmount()
+                ));
+            }
+        }
+
+        return duplicates;
+    }
+
+    /**
+     * Import data from Excel file input stream.
+     * This method validates for duplicates BEFORE inserting any data.
+     * If duplicates are found, the entire import is rejected with no data inserted.
+     *
+     * @return ImportSummary object containing import details including importId
      */
     @Transactional
-    public int importFromInputStream(InputStream inputStream, String filename) throws IOException {
-        // Create import summary record first
+    public ImportSummary importFromInputStream(InputStream inputStream, String filename) throws IOException {
+        // Parse Excel file first (NO database writes yet)
+        List<ImportedLineItem> lineItems = readExcelFile(inputStream, filename, null);
+
+        // CRITICAL: Check for duplicates BEFORE any database writes
+        List<String> duplicates = checkForDuplicates(lineItems);
+        if (!duplicates.isEmpty()) {
+            log.warn("Import rejected for file '{}': {} duplicate record(s) detected", filename, duplicates.size());
+            throw new DuplicateImportException(
+                "Import rejected: " + duplicates.size() + " duplicate record(s) detected. No data has been imported.",
+                duplicates
+            );
+        }
+
+        // No duplicates found - proceed with import
+        // Create import summary record
         ImportSummary summary = new ImportSummary();
         summary.setFilename(filename);
         summary.setRecordCount(0);
         summary.setStatus("PROCESSING");
         summary = importSummaryRepository.save(summary);
 
-        // Parse Excel file
-        List<ImportedLineItem> lineItems = readExcelFile(inputStream, filename, summary.getImportId());
+        // Now update line items with the import ID
+        final Long importId = summary.getImportId();
+        lineItems.forEach(item -> item.setImportId(importId));
 
-        // Save all line items
+        // Save all line items (within the same transaction)
         importedLineItemRepository.saveAll(lineItems);
 
         // Create/update customer records from imported line items
@@ -118,18 +188,23 @@ public class PricingImportService {
         // Update import summary with final count and status
         summary.setRecordCount(lineItems.size());
         summary.setStatus("COMPLETED");
-        importSummaryRepository.save(summary);
+        summary = importSummaryRepository.save(summary);
 
         // Recalculate customer ratings in background
         customerRatingService.recalculateAndSaveAllCustomerRatings();
 
-        log.info("Imported {} line items from {}", lineItems.size(), filename);
-        return lineItems.size();
+        log.info("Successfully imported {} line items from {}", lineItems.size(), filename);
+        return summary;
     }
 
     /**
      * Read Excel file and parse imported line items
-     * TODO: Adjust column mapping based on your actual Excel format
+     *
+     * @param inputStream The Excel file input stream
+     * @param filename The name of the file being imported
+     * @param importId The import ID (can be null during duplicate checking phase)
+     * @return List of parsed line items
+     * @throws IOException If there's an error reading the file
      */
     private List<ImportedLineItem> readExcelFile(InputStream inputStream, String filename, Long importId) throws IOException {
         List<ImportedLineItem> lineItems = new ArrayList<>();
@@ -143,9 +218,9 @@ public class PricingImportService {
                 Row row = sheet.getRow(i);
                 if (shouldSkipLine(row)) continue;
                 if (endParsing(row)) break;
-                if(isNumeric(getCellValueAsString(row.getCell(0)))) {
-                    clientCode = getCellValueAsString(row.getCell(0));
-                    clientName = getCellValueAsString(row.getCell(1));
+                if(isNumeric(ExcelParsingUtil.getCellValueAsString(row.getCell(0)))) {
+                    clientCode = ExcelParsingUtil.getCellValueAsString(row.getCell(0));
+                    clientName = ExcelParsingUtil.getCellValueAsString(row.getCell(1));
                     continue;
                 }
                 ImportedLineItem lineItem = parseRowToLineItem(clientCode, clientName, row, filename, importId);
@@ -175,25 +250,24 @@ public class PricingImportService {
             lineItem.setCustomerName(clientName);
 
             // Parse product fields
-            lineItem.setProductCode(getCellValueAsString(row.getCell(0)));
-            lineItem.setProductDescription(getCellValueAsString(row.getCell(1)));
+            lineItem.setProductCode(ExcelParsingUtil.getCellValueAsString(row.getCell(0)));
+            lineItem.setProductDescription(ExcelParsingUtil.getCellValueAsString(row.getCell(1)));
 
             // Parse line item fields
-            lineItem.setQuantity(getCellValueAsBigDecimal(row.getCell(2)));
-            lineItem.setAmount(getCellValueAsBigDecimal(row.getCell(3)));
-            lineItem.setCost(getCellValueAsBigDecimal(row.getCell(4)));
-            getCellValueAsBigDecimal(row.getCell(5));
+            lineItem.setQuantity(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(2)));
+            lineItem.setAmount(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(3)));
+            lineItem.setCost(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(4)));
+            ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(5));
 
             // Parse invoice fields
-            lineItem.setInvoiceNumber(getCellValueAsString(row.getCell(7)));
-            lineItem.setTransactionDate(getCellValueAsDate(row.getCell(8)));
+            lineItem.setInvoiceNumber(ExcelParsingUtil.getCellValueAsString(row.getCell(7)));
+            lineItem.setTransactionDate(ExcelParsingUtil.getCellValueAsDate(row.getCell(8)));
 
 
-            lineItem.setRef1(getCellValueAsString(row.getCell(9)));
-            lineItem.setRef2(getCellValueAsString(row.getCell(10)));
-            lineItem.setRef3(getCellValueAsString(row.getCell(11)));
-//            lineItem.set
-            lineItem.setOutstandingAmount(getCellValueAsBigDecimal(row.getCell(14)));
+            lineItem.setRef1(ExcelParsingUtil.getCellValueAsString(row.getCell(9)));
+            lineItem.setRef2(ExcelParsingUtil.getCellValueAsString(row.getCell(10)));
+            lineItem.setRef3(ExcelParsingUtil.getCellValueAsString(row.getCell(11)));
+            lineItem.setOutstandingAmount(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(14)));
 
             return lineItem;
 
@@ -207,15 +281,15 @@ public class PricingImportService {
     private boolean shouldSkipLine(Row row) {
         if (row == null) return true;
         if (row.getCell(0) == null) return true;
-        if (getCellValueAsString(row.getCell(0)).equalsIgnoreCase("")) return true;
-        if (getCellValueAsString(row.getCell(0)).equalsIgnoreCase("SubTotal")) return true;
+        if (ExcelParsingUtil.getCellValueAsString(row.getCell(0)).equalsIgnoreCase("")) return true;
+        if (ExcelParsingUtil.getCellValueAsString(row.getCell(0)).equalsIgnoreCase("SubTotal")) return true;
 
 
         return false;
     }
 
     private boolean endParsing(Row row) {
-        return (getCellValueAsString(row.getCell(0)).equalsIgnoreCase("9999999"));
+        return (ExcelParsingUtil.getCellValueAsString(row.getCell(0)).equalsIgnoreCase("9999999"));
     }
 
     private boolean isNumeric(String strNum) {
@@ -230,60 +304,6 @@ public class PricingImportService {
         return true;
     }
 
-
-    /**
-     * Helper methods to extract cell values safely
-     */
-    private String getCellValueAsString(Cell cell) {
-        if (cell == null) return null;
-
-        return switch (cell.getCellType()) {
-            case STRING -> cell.getStringCellValue();
-            case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
-            case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
-            default -> null;
-        };
-    }
-
-    private BigDecimal getCellValueAsBigDecimal(Cell cell) {
-        if (cell == null) return null;
-
-        return switch (cell.getCellType()) {
-            case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
-            case STRING -> {
-                try {
-                    yield new BigDecimal(cell.getStringCellValue());
-                } catch (NumberFormatException e) {
-                    yield null;
-                }
-            }
-            default -> null;
-        };
-    }
-
-    private LocalDate getCellValueAsDate(Cell cell) {
-        if (cell == null) return null;
-
-        try {
-            // Try to parse as a numeric date-formatted cell
-            if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-                return cell.getLocalDateTimeCellValue().toLocalDate();
-            }
-
-            // Try to parse as a string in dd/MM/yyyy format
-            if (cell.getCellType() == CellType.STRING) {
-                String dateStr = cell.getStringCellValue().trim();
-                if (!dateStr.isEmpty()) {
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                    return LocalDate.parse(dateStr, formatter);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Error parsing date from cell: {}", e.getMessage());
-        }
-
-        return null;
-    }
 
     /**
      * Get all import summaries
@@ -403,5 +423,39 @@ public class PricingImportService {
         }
 
         log.info("Processed {} unique customers", uniqueCustomers.size());
+    }
+
+    /**
+     * Find all line items with zero or null amounts from a specific import
+     *
+     * @param importId The import ID to check
+     * @return List of line items with zero/null amounts
+     */
+    public List<ImportedLineItem> getZeroAmountItems(Long importId) {
+        return dsl.selectFrom(IMPORTED_LINE_ITEMS)
+            .where(IMPORTED_LINE_ITEMS.IMPORT_ID.eq(importId))
+            .and(IMPORTED_LINE_ITEMS.AMOUNT.isNull()
+                .or(IMPORTED_LINE_ITEMS.AMOUNT.eq(BigDecimal.ZERO)))
+            .fetch(record -> {
+                ImportedLineItem item = new ImportedLineItem();
+                item.setLineId(record.getLineId());
+                item.setImportId(record.getImportId());
+                item.setFilename(record.getFilename());
+                item.setCustomerCode(record.getCustomerCode());
+                item.setCustomerName(record.getCustomerName());
+                item.setInvoiceNumber(record.getInvoiceNumber());
+                item.setTransactionDate(record.getTransactionDate());
+                item.setProductCode(record.getProductCode());
+                item.setProductDescription(record.getProductDescription());
+                item.setQuantity(record.getQuantity());
+                item.setAmount(record.getAmount());
+                item.setCost(record.getCost());
+                item.setRef1(record.getRef1());
+                item.setRef2(record.getRef2());
+                item.setRef3(record.getRef3());
+                item.setOutstandingAmount(record.getOutstandingAmount());
+                item.setImportDate(record.getImportDate());
+                return item;
+            });
     }
 }

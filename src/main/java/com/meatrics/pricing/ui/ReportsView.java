@@ -5,7 +5,6 @@ import com.meatrics.pricing.CustomerRatingReportDTO;
 import com.meatrics.pricing.ImportSummary;
 import com.meatrics.pricing.PricingImportService;
 import com.meatrics.pricing.ReportExportService;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -25,12 +24,11 @@ import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -306,7 +304,9 @@ public class ReportsView extends Main {
     }
 
     /**
-     * Generate and download XLS report
+     * Generate and download XLS report using the modern DownloadHandler pattern.
+     * Creates an Anchor component with a lambda-based download handler that writes
+     * the Excel file bytes directly to the response output stream.
      */
     private void generateXlsReport() {
         LocalDate startDate = startDatePicker.getValue();
@@ -327,26 +327,43 @@ public class ReportsView extends Main {
                     startDate.toString().replace("-", ""),
                     endDate.toString().replace("-", ""));
 
-            // Create download resource using StreamResource
-            StreamResource resource = new StreamResource(filename,
-                    () -> new ByteArrayInputStream(excelBytes));
-            resource.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            // Create an invisible Anchor with DownloadHandler for programmatic download
+            Anchor downloadLink = new Anchor(event -> {
+                try {
+                    // Set file metadata
+                    event.setFileName(filename);
+                    event.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    event.setContentLength(excelBytes.length);
 
-            // Create anchor for download
-            Anchor downloadLink = new Anchor(resource, "");
-            downloadLink.getElement().setAttribute("download", true);
-            downloadLink.setTarget("_blank");
-            downloadLink.getStyle().set("display", "none"); // Hide the anchor
+                    // Write the Excel bytes to the output stream
+                    try (OutputStream outputStream = event.getOutputStream()) {
+                        outputStream.write(excelBytes);
+                    }
 
-            // Add to UI (Vaadin will clean up on navigation)
+                    // Update UI to show success notification
+                    event.getUI().access(() ->
+                        showSuccessNotification("Report downloaded successfully!"));
+
+                    log.info("Downloaded XLS report: {} records, {} bytes",
+                            currentReportData.size(), excelBytes.length);
+
+                } catch (IOException e) {
+                    log.error("Error writing XLS report to output stream", e);
+                    event.getResponse().setStatus(500);
+                    event.getUI().access(() ->
+                        showErrorNotification("Error downloading Excel file: " + e.getMessage()));
+                }
+            }, "");
+
+            // Make the anchor invisible and add to layout
+            downloadLink.getElement().setAttribute("style", "display: none;");
             add(downloadLink);
 
-            // Trigger download immediately
+            // Programmatically trigger the download
             downloadLink.getElement().callJsFunction("click");
 
-            showSuccessNotification("Report generated successfully! Downloading...");
-
-            log.info("Generated XLS report: {} records, {} bytes", currentReportData.size(), excelBytes.length);
+            // Show initiating notification
+            showSuccessNotification("Generating report...");
 
         } catch (IOException e) {
             log.error("Error generating XLS report", e);
@@ -358,7 +375,7 @@ public class ReportsView extends Main {
      * Update grid footer with recalculated totals
      */
     private void updateGridFooter() {
-        var footerRow = reportGrid.getFooterRows().get(0);
+        var footerRow = reportGrid.getFooterRows().getFirst();
 
         // Update totals in respective columns
         footerRow.getCell(reportGrid.getColumnByKey("cost")).setText(calculateTotalCost());
@@ -658,7 +675,9 @@ public class ReportsView extends Main {
     }
 
     /**
-     * Generate and download XLS cost report
+     * Generate and download XLS cost report using the modern DownloadHandler pattern.
+     * Creates an Anchor component with a lambda-based download handler that writes
+     * the Excel file bytes directly to the response output stream.
      */
     private void generateCostReportXls() {
         ImportSummary selectedFile = fileSelectionComboBox.getValue();
@@ -677,27 +696,43 @@ public class ReportsView extends Main {
             String filename = String.format("Cost_Report_%s.xlsx",
                     selectedFile.getFilename().replace(".xlsx", "").replace(".xls", ""));
 
-            // Create download resource using StreamResource
-            StreamResource resource = new StreamResource(filename,
-                    () -> new ByteArrayInputStream(excelBytes));
-            resource.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            // Create an invisible Anchor with DownloadHandler for programmatic download
+            Anchor downloadLink = new Anchor(event -> {
+                try {
+                    // Set file metadata
+                    event.setFileName(filename);
+                    event.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    event.setContentLength(excelBytes.length);
 
-            // Create anchor for download
-            Anchor downloadLink = new Anchor(resource, "");
-            downloadLink.getElement().setAttribute("download", true);
-            downloadLink.setTarget("_blank");
-            downloadLink.getStyle().set("display", "none"); // Hide the anchor
+                    // Write the Excel bytes to the output stream
+                    try (OutputStream outputStream = event.getOutputStream()) {
+                        outputStream.write(excelBytes);
+                    }
 
-            // Add to UI (Vaadin will clean up on navigation)
+                    // Update UI to show success notification
+                    event.getUI().access(() ->
+                        showSuccessNotification("Report downloaded successfully!"));
+
+                    log.info("Downloaded Cost Report XLS: {} records, {} bytes",
+                            currentCostReportData.size(), excelBytes.length);
+
+                } catch (IOException e) {
+                    log.error("Error writing Cost Report XLS to output stream", e);
+                    event.getResponse().setStatus(500);
+                    event.getUI().access(() ->
+                        showErrorNotification("Error downloading Excel file: " + e.getMessage()));
+                }
+            }, "");
+
+            // Make the anchor invisible and add to layout
+            downloadLink.getElement().setAttribute("style", "display: none;");
             add(downloadLink);
 
-            // Trigger download immediately
+            // Programmatically trigger the download
             downloadLink.getElement().callJsFunction("click");
 
-            showSuccessNotification("Report generated successfully! Downloading...");
-
-            log.info("Generated Cost Report XLS: {} records, {} bytes",
-                    currentCostReportData.size(), excelBytes.length);
+            // Show initiating notification
+            showSuccessNotification("Generating report...");
 
         } catch (IOException e) {
             log.error("Error generating Cost Report XLS", e);

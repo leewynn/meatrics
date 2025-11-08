@@ -190,35 +190,24 @@ public class CustomerRatingService {
      */
     @Async
     public void recalculateAndSaveAllCustomerRatings() {
-        log.info("Starting customer rating recalculation...");
-        long startTime = System.currentTimeMillis();
-
-        List<Customer> allCustomers = customerRepository.findAll();
-        int count = 0;
-
-        for (Customer customer : allCustomers) {
-            try {
-                CustomerRatingResult ratings = calculateRatings(customer.getCustomerCode());
-                String formattedRatings = ratings.getFormattedRatings();
-                customer.setCustomerRating(formattedRatings);
-                customerRepository.save(customer);
-                count++;
-            } catch (Exception e) {
-                log.warn("Failed to calculate rating for customer {}: {}",
-                        customer.getCustomerCode(), e.getMessage());
-            }
-        }
-
-        long duration = System.currentTimeMillis() - startTime;
-        log.info("Customer rating recalculation complete. Updated {} of {} customers in {}ms",
-                count, allCustomers.size(), duration);
+        recalculateAllRatingsInternal();
     }
 
     /**
      * Calculate and save ratings for all customers (synchronous version for when needed)
      */
     public int recalculateAndSaveAllCustomerRatingsSync() {
-        log.info("Starting customer rating recalculation (synchronous)...");
+        return recalculateAllRatingsInternal();
+    }
+
+    /**
+     * Internal method containing the shared logic for rating calculation.
+     * Used by both async and sync public methods.
+     *
+     * @return The number of customers successfully updated
+     */
+    private int recalculateAllRatingsInternal() {
+        log.info("Starting customer rating recalculation...");
         long startTime = System.currentTimeMillis();
 
         List<Customer> allCustomers = customerRepository.findAll();

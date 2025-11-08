@@ -12,5 +12,6 @@
     <include file="changes/005-rename-credit-rating-to-customer-rating.sql" relativeToChangelogFile="true"/>
     <include file="changes/006-create-grouped-line-items-view.sql" relativeToChangelogFile="true"/>
     <include file="changes/007-create-pricing-sessions-tables.sql" relativeToChangelogFile="true"/>
+    <include file="changes/008-add-unique-constraint-imported-line-items.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

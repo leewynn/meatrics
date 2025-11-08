@@ -18,20 +18,33 @@ src/main/java/com/meatrics/
 ├── Application.java                    # Main Spring Boot application
 ├── base/                              # Base infrastructure
 │   ├── config/                        # Database initialization
-│   └── ui/                            # Main layout, toolbars
+│   └── ui/                            # Main layout, base classes, toolbars
+│       ├── AbstractGridView.java      # Base class for views with column visibility
+│       ├── MainLayout.java            # Application main layout
+│       └── component/                 # Shared UI components
+│           └── ViewToolbar.java       # Toolbar component
 ├── pricing/                           # Core pricing domain
 │   ├── ui/                            # Vaadin views
 │   │   ├── PricingDataView.java      # Read-only data view (route: "")
 │   │   ├── PricingSessionsView.java  # Editable pricing sessions (route: "pricing-sessions")
-│   │   └── ImportPricingView.java    # Import management (route: "import-pricing")
+│   │   ├── ReportsView.java          # Reports generation (route: "reports")
+│   │   ├── ImportPricingView.java    # Import management (route: "import-pricing")
+│   │   └── component/                # View-specific components
+│   │       └── CustomerEditDialog.java # Reusable customer edit dialog
 │   ├── PricingImportService.java      # Excel import and business logic
+│   ├── PricingSessionService.java     # Session management
+│   ├── ReportExportService.java       # Excel report generation
+│   ├── CustomerRatingService.java     # Customer rating calculations
 │   ├── ImportedLineItemRepository.java # jOOQ data access for line items
 │   ├── GroupedLineItemRepository.java  # jOOQ data access for grouped view
+│   ├── PricingSessionRepository.java   # jOOQ data access for sessions
 │   ├── CustomerRepository.java         # jOOQ data access for customers
 │   ├── ImportedLineItem.java          # Entity for individual line items
-│   ├── GroupedLineItem.java           # DTO for aggregated customer-product data (wraps VGroupedLineItemsRecord)
-│   └── *.java                         # Other entity classes
-├── util/                              # Utilities (jOOQ code generation, etc.)
+│   ├── GroupedLineItem.java           # DTO for aggregated customer-product data
+│   ├── PricingSession.java            # Session entity
+│   ├── Customer.java                  # Customer entity
+│   └── *.java                         # Other entities and DTOs
+├── util/                              # Utilities (jOOQ code generation, Excel parsing)
 └── generated/                         # jOOQ generated classes (auto-generated)
 
 src/main/resources/
@@ -43,7 +56,8 @@ src/main/resources/
 │       ├── 003-create-product-cost-tables.sql
 │       ├── 004-create-customer-table.sql
 │       ├── 005-rename-credit-rating-to-customer-rating.sql
-│       └── 006-create-grouped-line-items-view.sql
+│       ├── 006-create-grouped-line-items-view.sql
+│       └── 007-create-pricing-sessions-tables.sql
 └── application.properties             # Configuration
 ```
 
@@ -88,9 +102,22 @@ Master data for customers.
 - **Strategy**: Auto-created during pricing data import, editable via UI
 - **Purpose**: Centralized customer information and rating management
 
+#### `pricing_sessions`
+Stores saved pricing sessions with metadata.
+- **Key fields**: id (auto-generated), session_name (unique), created_date, last_modified_date, status
+- **Purpose**: Track pricing adjustment sessions for comparison and workflow management
+- **Relationships**: One-to-many with pricing_session_line_items
+
+#### `pricing_session_line_items`
+Stores individual line items within a pricing session.
+- **Key fields**: id, session_id (FK), customer_code, customer_name, customer_rating, product_code, product_description, total_quantity, total_cost, total_amount, original_amount, amount_modified
+- **Purpose**: Persist grouped line item data with pricing adjustments
+- **Strategy**: Each session captures a snapshot of grouped items with all modifications
+
 ### Important Notes
 - All monetary values use `DECIMAL(12,2)` for precision
 - Foreign keys are NOT used between imported_line_items and customers - natural key (customer_code) linking
+- Foreign key exists: pricing_session_line_items.session_id → pricing_sessions.id (ON DELETE CASCADE)
 - modified_date updates handled in application code (no DB triggers)
 
 ## Key Features Implemented
@@ -114,52 +141,87 @@ Master data for customers.
 ### 2. Pricing Data View (PricingDataView)
 - **Location**: Route "" (root/default page), Menu order 0
 - **Purpose**: Read-only view of imported sales data
+- **Base Class**: Extends `AbstractGridView` for column visibility management
 - **Features**:
   - Two-tier filtering system:
     - **Primary**: Date range filter (creates backing list)
     - **Secondary**: Customer name + product filters (work on backing list)
   - Grid with reorderable columns
-  - Collapsible column visibility toggles
+  - Collapsible column visibility toggles (persisted to browser localStorage)
   - Footer row showing totals: quantity, cost, amount, gross profit (with %)
-  - **Clickable customer names**: Opens edit dialog for customer rating and notes
+  - **Clickable customer names**: Opens `CustomerEditDialog` for customer rating and notes
   - **Customer Rating column**: Displays calculated rating for each customer
   - Calculated columns: Unit Sell Price, Unit Cost Price
+  - **Note**: The "outstanding" column was removed in recent update
 
 ### 3. Pricing Sessions View (PricingSessionsView)
 - **Location**: Route "pricing-sessions", Menu order 1
-- **Purpose**: Editable pricing view for price adjustments
+- **Purpose**: Editable pricing view for price adjustments with session management
+- **Base Class**: Extends `AbstractGridView` for column visibility management
 - **Data Model**: Uses **GroupedLineItem** (aggregated by customer + product)
   - Unlike PricingDataView which shows individual transactions
   - Each row represents the sum of all transactions for a customer-product combination
   - Data sourced from `v_grouped_line_items` database view (efficient server-side aggregation)
   - For date-filtered queries: queries `imported_line_items` with WHERE + GROUP BY
-  - Removes invoice-specific fields (invoice number, transaction date, outstanding amount)
+  - Removes invoice-specific fields (invoice number, transaction date)
   - Shows aggregated totals: totalQuantity, totalAmount, totalCost
-- **Features**:
+- **Session Management**:
+  - **Save Session**: Persist current pricing changes with a session name
+  - **Load Session**: Browse and load previously saved sessions (double-click or select + load)
+  - **New Session**: Clear current session and start fresh
+  - **Delete Session**: Remove saved sessions from database
+  - **Unsaved Changes Warning**: Clear dialog with three options when loading with unsaved changes:
+    - **Save & Load**: Save current session first, then load selected session (primary action, green)
+    - **Discard & Load**: Abandon changes and load selected session (destructive action, red)
+    - **Cancel**: Stay in current session (easily accessible)
+  - **Visual Feedback**: Title shows session name and turns orange when unsaved changes exist
+  - **Session Persistence**: Sessions stored in `pricing_sessions` and `pricing_session_line_items` tables
+- **Price Editing Features**:
   - Two-tier filtering system (same as PricingDataView):
     - **Primary**: Date range filter (creates backing list of grouped items)
     - **Secondary**: Customer name + product filters (work on backing list)
   - Grid with reorderable columns
-  - Collapsible column visibility toggles
+  - Collapsible column visibility toggles (persisted to browser localStorage)
   - Footer row showing totals: quantity, cost, amount, gross profit (with %)
   - **Clickable Unit Sell Price**: Opens dialog to adjust prices
   - Price adjustment dialog shows:
     - Product code, description, unit cost price (read-only)
     - Original unit sell price (read-only)
     - Add to unit sell price field (with auto-calculation)
-    - New unit sell price field
-    - Apply scope checkboxes:
+    - New unit sell price field (direct editing disables batch checkboxes)
+    - Apply scope checkboxes (only available when using "Add to Unit Sell Price"):
       - This customer-product combination only (default)
       - All shown records
-      - All products in date range
+      - All customers with the same product code
   - Amount calculation: new_unit_sell_price × item.totalQuantity (for grouped item)
   - Green highlighting for modified amounts and gross profit
   - **Undo button**: Single-level undo for last price change
-  - **Clickable customer names**: Opens edit dialog for customer rating and notes
-  - **Customer Rating column**: Displays calculated rating for each customer
-  - **Important**: Changes are transient (in-memory), NOT saved to database
+  - **Clickable customer names**: Opens `CustomerEditDialog` for customer rating and notes
+  - **Customer Rating column**: Displays calculated rating (from session data if loaded, otherwise from repository)
 
-### 4. Customer Management
+### 4. Reports View (ReportsView)
+- **Location**: Route "reports", Menu order 2
+- **Purpose**: Generate and export analytical reports
+- **Layout**: Tabbed interface with multiple report types
+- **Customer Rating Report Tab**:
+  - Date range selection with validation
+  - Grid display showing:
+    - Customer name and code
+    - Cost, amount, and GP%
+    - Three rating algorithms: Original, Modified, Claude
+  - Footer row with totals
+  - **Excel Export**: Generate XLS report with modern DownloadHandler pattern
+  - Uses `Anchor` component with lambda-based download handler
+  - Writes bytes directly to response output stream
+  - Proper file metadata (filename, content-type, content-length)
+- **Cost Report Tab**:
+  - ComboBox to select from import summaries
+  - Shows line items where cost < standard cost
+  - Grid columns: stock code, product description, customer name, invoice number, transaction date, quantity, cost, STDCOST, line item cost price, difference
+  - **Excel Export**: Generate XLS report using same modern DownloadHandler pattern
+  - Identifies potential pricing issues by comparing actual costs with standard costs
+
+### 5. Customer Management
 - Auto-created during pricing data import (extracts unique customer_code/name pairs)
 - Customer ratings auto-calculated and stored after each import
 - Editable via clickable customer names in both PricingDataView and PricingSessionsView
@@ -172,6 +234,53 @@ Master data for customers.
     - Helper text: "Auto-calculated during import. Use 'Recalculate All Ratings' button to refresh."
     - Can be manually overridden if needed
   - Notes (editable, text area)
+
+## Architecture Patterns
+
+### AbstractGridView Pattern
+Both `PricingDataView` and `PricingSessionsView` extend `AbstractGridView`, which provides:
+- **Column Visibility Management**: Save/restore column visibility preferences to browser localStorage
+- **Storage Prefix**: Each view has unique storage prefix to avoid conflicts
+- **Automatic Persistence**: Column visibility changes are automatically saved
+- **Cross-Session Persistence**: User preferences maintained across browser sessions
+
+**Usage Example:**
+```java
+public class PricingDataView extends AbstractGridView {
+    private static final String STORAGE_PREFIX = "PricingDataView-column-";
+
+    @Override
+    protected String getStoragePrefix() {
+        return STORAGE_PREFIX;
+    }
+
+    // Save visibility when checkbox changes
+    checkbox.addValueChangeListener(e -> {
+        grid.getColumnByKey("customerName").setVisible(e.getValue());
+        saveColumnVisibility("customerName", e.getValue());
+    });
+
+    // Restore on view initialization
+    restoreColumn("customerName", customerNameCheck);
+}
+```
+
+### Reusable Component Pattern
+The application uses reusable dialog components for consistent UX:
+
+**CustomerEditDialog**:
+- Shared component for editing customer details
+- Used by both PricingDataView and PricingSessionsView
+- Accepts optional callback for post-save actions
+- Encapsulates customer update logic
+
+**Usage:**
+```java
+customerRepository.findByCustomerCode(customerCode).ifPresent(customer -> {
+    CustomerEditDialog dialog = new CustomerEditDialog(customer, customerRepository);
+    dialog.open(null); // Or provide callback if needed
+});
+```
 
 ## Important Patterns & Conventions
 
@@ -320,6 +429,51 @@ Previous attempt to use PostgreSQL triggers failed with Liquibase. Strategy: Han
 
 **Note on current rename:** The credit_rating → customer_rating rename was done with ALTER COLUMN which created this workflow issue. In future, use the two-phase ADD/DROP approach above.
 
+### 9. Modern Download Handler Pattern (Vaadin Flow)
+The application uses the modern `DownloadHandler` pattern via `Anchor` for file downloads instead of deprecated `StreamResource`:
+
+```java
+// Generate file bytes
+byte[] excelBytes = reportExportService.generateCustomerRatingReportXLS(...);
+
+// Create invisible Anchor with DownloadHandler lambda
+Anchor downloadLink = new Anchor(event -> {
+    try {
+        // Set file metadata
+        event.setFileName("Report.xlsx");
+        event.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        event.setContentLength(excelBytes.length);
+
+        // Write bytes to output stream
+        try (OutputStream outputStream = event.getOutputStream()) {
+            outputStream.write(excelBytes);
+        }
+
+        // Show success notification (UI access required)
+        event.getUI().access(() ->
+            showSuccessNotification("Downloaded successfully!"));
+
+    } catch (IOException e) {
+        // Handle errors
+        event.getResponse().setStatus(500);
+        event.getUI().access(() ->
+            showErrorNotification("Error: " + e.getMessage()));
+    }
+}, "");
+
+// Make invisible, add to layout, and trigger programmatically
+downloadLink.getElement().setAttribute("style", "display: none;");
+add(downloadLink);
+downloadLink.getElement().callJsFunction("click");
+```
+
+**Benefits:**
+- Direct control over response headers and output stream
+- Proper error handling with HTTP status codes
+- UI updates via `event.getUI().access()`
+- Cleaner than deprecated `StreamResource` approach
+- Used in both Customer Rating Report and Cost Report exports
+
 ## Excel File Formats
 
 ### Pricing Data Import
@@ -398,11 +552,74 @@ gross_profit_percentage = (gross_profit / amount) × 100
 - Single-level undo for safety
 - Natural key linking (no foreign keys) for flexibility
 
+## Recent Changes (Last Updated: 2025-11-09)
+
+### Session Loading Dialog Improvements
+**Context**: Session loading with unsaved changes needed clearer user guidance.
+
+**Changes:**
+- Replaced generic 3-button dialog with descriptive action names
+- **Primary action (green)**: "Save & Load" - saves current session, then loads selected
+- **Destructive action (red)**: "Discard & Load" - abandons changes and loads selected
+- **Cancel button**: Remains in current session (easily accessible)
+- Added informative message showing current session name if applicable
+- Improved button themes for better visual hierarchy
+
+### Modern Download Handler Implementation
+**Context**: Vaadin deprecated `StreamResource` in favor of `DownloadHandler` pattern.
+
+**Changes:**
+- Migrated both Customer Rating Report and Cost Report to use `Anchor` with lambda-based download handler
+- Direct control over response output stream and headers
+- Proper error handling with HTTP status codes
+- UI updates via `event.getUI().access()` for notifications
+- Cleaner, more maintainable code
+
+**Implementation Benefits:**
+- File metadata (name, type, length) set explicitly on event
+- Bytes written directly to `OutputStream` from service layer
+- Invisible anchor triggered programmatically with JS
+- Success/error notifications shown in UI thread-safe manner
+
+### Column Visibility Removal
+**Context**: User feedback indicated "outstanding" column was not needed.
+
+**Changes:**
+- Removed "outstanding" column from `PricingDataView`
+- Simplified grid layout
+- Reduced visual clutter
+
+### AbstractGridView Pattern Introduction
+**Context**: Both main views needed identical column visibility management.
+
+**Changes:**
+- Created `AbstractGridView` base class in `base.ui` package
+- Extracted common localStorage save/restore logic
+- Each view provides unique storage prefix to avoid conflicts
+- Checkbox listeners automatically persist changes
+- Column visibility preserved across browser sessions
+
 ## Future Direction
 
 ### Recently Implemented Features
 
-#### 1. Customer Rating System ✅
+#### 1. Pricing Session Management ✅
+**Status**: Fully implemented in PricingSessionsView.
+
+**Features:**
+- Save pricing sessions with custom names
+- Load previously saved sessions
+- Delete old sessions
+- Unsaved changes detection with clear action choices
+- Visual feedback (orange title for unsaved changes, session name display)
+- Session persistence in database with foreign key constraints
+
+**Database:**
+- `pricing_sessions` table with unique session names
+- `pricing_session_line_items` table with CASCADE delete
+- Stores complete snapshot of grouped line items with modifications
+
+#### 2. Customer Rating System ✅
 Implemented three customer rating algorithms with automatic calculation and background processing:
 
 **Algorithms:**
@@ -450,13 +667,14 @@ Implemented three customer rating algorithms with automatic calculation and back
 
 ## Known Limitations
 
-1. **No Price Persistence**: All price changes in Pricing Sessions are in-memory only
+1. **Session-based Price Changes**: Price changes saved within sessions, not applied to base data
 2. **Single Undo Level**: Can only undo the most recent price change
-3. **No Batch Operations**: Price changes applied one dialog at a time
+3. **No Batch Import**: Price changes applied one dialog at a time
 4. **Manual Import Triggering**: No automated/scheduled imports
 5. **No User Authentication**: System is currently single-user
-6. **No Export Functionality**: Cannot export modified pricing data
-7. **No Audit Trail**: Changes to customers/prices not tracked historically
+6. **No Export to Source System**: Cannot export modified pricing back to original business system
+7. **Limited Audit Trail**: Session changes tracked, but not full historical audit of all modifications
+8. **Session Notes Not Fully Implemented**: Session notes field exists but not fully integrated in save workflow
 
 ## Development Notes
 
@@ -527,16 +745,18 @@ Access at: http://localhost:8080
 
 ## Key Files to Review for Context
 
-1. **PROJECT_OVERVIEW.md** (this file) - Start here
-2. **JOOQ_GENERATION.md** - jOOQ workflow
-3. **db/changelog/db.changelog-master.xml** - Database schema evolution
-4. **db/changelog/changes/006-create-grouped-line-items-view.sql** - Grouping view definition
-5. **pricing/ui/PricingSessionsView.java** - Most complex view, shows grouping and editing patterns
-6. **pricing/PricingImportService.java** - Excel parsing logic
-7. **pricing/GroupedLineItemRepository.java** - Repository for querying aggregated data
-8. **pricing/ImportedLineItem.java** - Core entity with transient fields (individual line items)
-9. **pricing/GroupedLineItem.java** - DTO wrapping VGroupedLineItemsRecord with UI state
-10. **pricing/CustomerRatingService.java** - Customer rating algorithms (3 implementations)
+1. **PROJECT_OVERVIEW.md** (this file) - Comprehensive project documentation - start here
+2. **HANDOFF.md** - Quick reference guide for future Claude sessions
+3. **JOOQ_GENERATION.md** - jOOQ code generation workflow
+4. **base/ui/AbstractGridView.java** - Base class for column visibility management
+5. **pricing/ui/PricingSessionsView.java** - Most complex view with session management and pricing
+6. **pricing/ui/ReportsView.java** - Reports generation with modern download handler
+7. **pricing/ui/component/CustomerEditDialog.java** - Reusable customer edit component
+8. **pricing/PricingSessionService.java** - Session save/load/delete logic
+9. **pricing/ReportExportService.java** - Excel report generation
+10. **pricing/PricingImportService.java** - Excel parsing and data import logic
+11. **db/changelog/changes/007-create-pricing-sessions-tables.sql** - Session persistence schema
+12. **db/changelog/changes/006-create-grouped-line-items-view.sql** - Grouping view definition
 
 ## Glossary
 
@@ -566,5 +786,5 @@ Access at: http://localhost:8080
 
 ---
 
-**Last Updated**: 2025-11-08
-**Project Status**: Active development, core features implemented, customer rating system implemented, pricing sessions grouping implemented, analytics features in planning
+**Last Updated**: 2025-11-09
+**Project Status**: Active development, core features fully implemented including pricing sessions with save/load, customer rating system, reports with modern download handling, and comprehensive UI patterns. Ready for analytics enhancements and potential integration features.

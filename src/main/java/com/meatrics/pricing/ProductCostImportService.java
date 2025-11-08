@@ -1,5 +1,6 @@
 package com.meatrics.pricing;
 
+import com.meatrics.util.ExcelParsingUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -127,118 +128,68 @@ public class ProductCostImportService {
         product.setImportFilename(filename);
 
         // Column 0 (A): Stockcode
-        product.setProductCode(getCellValueAsString(row.getCell(0)));
+        product.setProductCode(ExcelParsingUtil.getCellValueAsString(row.getCell(0)));
 
         // Column 1 (B): Description
-        product.setDescription(getCellValueAsString(row.getCell(1)));
+        product.setDescription(ExcelParsingUtil.getCellValueAsString(row.getCell(1)));
 
         // Sell prices (Columns 2-11, C-L)
-        product.setSellPrice1(getCellValueAsBigDecimal(row.getCell(2)));
-        product.setSellPrice2(getCellValueAsBigDecimal(row.getCell(3)));
-        product.setSellPrice3(getCellValueAsBigDecimal(row.getCell(4)));
-        product.setSellPrice4(getCellValueAsBigDecimal(row.getCell(5)));
-        product.setSellPrice5(getCellValueAsBigDecimal(row.getCell(6)));
-        product.setSellPrice6(getCellValueAsBigDecimal(row.getCell(7)));
-        product.setSellPrice7(getCellValueAsBigDecimal(row.getCell(8)));
-        product.setSellPrice8(getCellValueAsBigDecimal(row.getCell(9)));
-        product.setSellPrice9(getCellValueAsBigDecimal(row.getCell(10)));
-        product.setSellPrice10(getCellValueAsBigDecimal(row.getCell(11)));
+        product.setSellPrice1(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(2)));
+        product.setSellPrice2(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(3)));
+        product.setSellPrice3(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(4)));
+        product.setSellPrice4(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(5)));
+        product.setSellPrice5(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(6)));
+        product.setSellPrice6(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(7)));
+        product.setSellPrice7(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(8)));
+        product.setSellPrice8(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(9)));
+        product.setSellPrice9(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(10)));
+        product.setSellPrice10(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(11)));
 
         // Column 12 (M): Latestcost
-        product.setLatestCost(getCellValueAsBigDecimal(row.getCell(12)));
+        product.setLatestCost(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(12)));
 
         // Column 13 (N): Avecost
-        product.setAverageCost(getCellValueAsBigDecimal(row.getCell(13)));
+        product.setAverageCost(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(13)));
 
         // Column 14-16 (O-Q): Stock levels
-        product.setMinStock(getCellValueAsBigDecimal(row.getCell(14)));
-        product.setMaxStock(getCellValueAsBigDecimal(row.getCell(15)));
-        product.setBinCode(getCellValueAsString(row.getCell(16)));
+        product.setMinStock(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(14)));
+        product.setMaxStock(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(15)));
+        product.setBinCode(ExcelParsingUtil.getCellValueAsString(row.getCell(16)));
 
         // Column 21 (V): Isactive
-        String isActive = getCellValueAsString(row.getCell(21));
+        String isActive = ExcelParsingUtil.getCellValueAsString(row.getCell(21));
         product.setIsActive("Y".equalsIgnoreCase(isActive));
 
         // Column 22-23 (W-X): Weight and Cubic
-        product.setWeight(getCellValueAsBigDecimal(row.getCell(22)));
-        product.setCubic(getCellValueAsBigDecimal(row.getCell(23)));
+        product.setWeight(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(22)));
+        product.setCubic(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(23)));
 
         // Column 24 (Y): Pack (unit of measure)
-        product.setUnitOfMeasure(getCellValueAsString(row.getCell(24)));
+        product.setUnitOfMeasure(ExcelParsingUtil.getCellValueAsString(row.getCell(24)));
 
         // Column 25 (Z): Stdcost - PRIMARY COST FIELD
-        product.setStandardCost(getCellValueAsBigDecimal(row.getCell(25)));
+        product.setStandardCost(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(25)));
 
         // Column 26-27 ([, \): Tax rates
-        product.setSalesTaxRate(getCellValueAsBigDecimal(row.getCell(26)));
-        product.setPurchaseTaxRate(getCellValueAsBigDecimal(row.getCell(27)));
+        product.setSalesTaxRate(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(26)));
+        product.setPurchaseTaxRate(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(27)));
 
         // Column 29 (^): Suppliercost
-        product.setSupplierCost(getCellValueAsBigDecimal(row.getCell(29)));
+        product.setSupplierCost(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(29)));
 
         // Column 32-36 (a-e): Classification
-        product.setPrimaryGroup(getCellValueAsString(row.getCell(32)));
-        product.setSecondaryGroup(getCellValueAsString(row.getCell(33)));
-        product.setProductClass(getCellValueAsString(row.getCell(34)));
-        product.setTertiaryGroup(getCellValueAsString(row.getCell(35)));
-        product.setSupplierName(getCellValueAsString(row.getCell(36)));
+        product.setPrimaryGroup(ExcelParsingUtil.getCellValueAsString(row.getCell(32)));
+        product.setSecondaryGroup(ExcelParsingUtil.getCellValueAsString(row.getCell(33)));
+        product.setProductClass(ExcelParsingUtil.getCellValueAsString(row.getCell(34)));
+        product.setTertiaryGroup(ExcelParsingUtil.getCellValueAsString(row.getCell(35)));
+        product.setSupplierName(ExcelParsingUtil.getCellValueAsString(row.getCell(36)));
 
         // GL codes (Columns 19, 20, 28)
-        product.setSalesGlCode(getCellValueAsString(row.getCell(19)));
-        product.setPurchaseGlCode(getCellValueAsString(row.getCell(20)));
-        product.setCosGlCode(getCellValueAsString(row.getCell(28)));
+        product.setSalesGlCode(ExcelParsingUtil.getCellValueAsString(row.getCell(19)));
+        product.setPurchaseGlCode(ExcelParsingUtil.getCellValueAsString(row.getCell(20)));
+        product.setCosGlCode(ExcelParsingUtil.getCellValueAsString(row.getCell(28)));
 
         return product;
-    }
-
-    private String getCellValueAsString(Cell cell) {
-        if (cell == null) {
-            return null;
-        }
-
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                return String.valueOf((long) cell.getNumericCellValue());
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                try {
-                    return cell.getStringCellValue();
-                } catch (Exception e) {
-                    return String.valueOf(cell.getNumericCellValue());
-                }
-            default:
-                return null;
-        }
-    }
-
-    private BigDecimal getCellValueAsBigDecimal(Cell cell) {
-        if (cell == null) {
-            return null;
-        }
-
-        try {
-            switch (cell.getCellType()) {
-                case NUMERIC:
-                    return BigDecimal.valueOf(cell.getNumericCellValue());
-                case STRING:
-                    String value = cell.getStringCellValue().trim();
-                    if (value.isEmpty()) {
-                        return null;
-                    }
-                    // Remove currency symbols and commas
-                    value = value.replace("$", "").replace(",", "");
-                    return new BigDecimal(value);
-                case FORMULA:
-                    return BigDecimal.valueOf(cell.getNumericCellValue());
-                default:
-                    return null;
-            }
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     /**

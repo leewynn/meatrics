@@ -11,7 +11,9 @@
       "Bash(chmod:*)",
       "WebFetch(domain:www.jooq.org)",
       "Bash(mvn clean compile:*)",
-      "Bash(mvn compile:*)"
+      "Bash(mvn compile:*)",
+      "Bash(gemini:*)",
+      "WebFetch(domain:dev.to)"
     ],
     "deny": [],
     "ask": []

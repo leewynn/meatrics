@@ -1,5 +1,6 @@
 package com.meatrics.pricing.ui;
 
+import com.meatrics.base.ui.AbstractGridView;
 import com.meatrics.pricing.Customer;
 import com.meatrics.pricing.CustomerRatingService;
 import com.meatrics.pricing.CustomerRepository;
@@ -7,7 +8,7 @@ import com.meatrics.pricing.GroupedLineItem;
 import com.meatrics.pricing.PricingImportService;
 import com.meatrics.pricing.PricingSession;
 import com.meatrics.pricing.PricingSessionService;
-import com.vaadin.flow.component.UI;
+import com.meatrics.pricing.ui.component.CustomerEditDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -21,7 +22,6 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -49,9 +49,14 @@ import java.util.stream.Collectors;
 @Route("pricing-sessions")
 @PageTitle("Pricing Sessions")
 @Menu(order = 1, icon = "vaadin:edit", title = "Pricing Sessions")
-public class PricingSessionsView extends Main {
+public class PricingSessionsView extends AbstractGridView {
 
     private static final String STORAGE_PREFIX = "PricingSessionsView-column-";
+
+    @Override
+    protected String getStoragePrefix() {
+        return STORAGE_PREFIX;
+    }
 
     private final PricingImportService pricingImportService;
     private final CustomerRepository customerRepository;
@@ -539,7 +544,7 @@ public class PricingSessionsView extends Main {
         }
 
         // Update footer cells
-        var footerRow = dataGrid.getFooterRows().get(0);
+        var footerRow = dataGrid.getFooterRows().getFirst();
 
         footerRow.getCell(dataGrid.getColumnByKey("quantity")).setText(
             String.format("%.2f", totalQuantity));
@@ -569,17 +574,6 @@ public class PricingSessionsView extends Main {
     }
 
     /**
-     * Save column visibility to browser localStorage
-     */
-    private void saveColumnVisibility(String columnKey, boolean visible) {
-        getElement().executeJs(
-            "localStorage.setItem($0, $1)",
-            STORAGE_PREFIX + columnKey,
-            String.valueOf(visible)
-        );
-    }
-
-    /**
      * Restore column visibility from browser localStorage
      */
     private void restoreColumnVisibility() {
@@ -593,22 +587,6 @@ public class PricingSessionsView extends Main {
         restoreColumn("cost", costCheck);
         restoreColumn("unitCostPrice", unitCostPriceCheck);
         restoreColumn("grossProfit", grossProfitCheck);
-    }
-
-    /**
-     * Restore individual column visibility from localStorage
-     */
-    private void restoreColumn(String columnKey, Checkbox checkbox) {
-        UI ui = UI.getCurrent();
-        getElement().executeJs(
-            "return localStorage.getItem($0)",
-            STORAGE_PREFIX + columnKey
-        ).then(String.class, value -> {
-            if ("false".equals(value)) {
-                ui.access(() -> checkbox.setValue(false)); // This triggers the listener which updates grid and saves
-            }
-            // If true or null, keep default (true)
-        });
     }
 
     private void openUnitSellPriceEditDialog(GroupedLineItem item) {
@@ -822,7 +800,7 @@ public class PricingSessionsView extends Main {
                     item.setTotalAmount(newAmount);
                     // Only mark as modified if the amount is different from the original
                     BigDecimal originalAmt = item.getOriginalAmount();
-                    boolean isModified = (originalAmt == null || newAmount.compareTo(originalAmt) != 0);
+                    boolean isModified = (originalAmt != null && newAmount.compareTo(originalAmt) != 0);
                     item.setAmountModified(isModified);
                 }
             }
@@ -852,7 +830,7 @@ public class PricingSessionsView extends Main {
                     item.setTotalAmount(newAmount);
                     // Only mark as modified if the amount is different from the original
                     BigDecimal originalAmt = item.getOriginalAmount();
-                    boolean isModified = (originalAmt == null || newAmount.compareTo(originalAmt) != 0);
+                    boolean isModified = (originalAmt != null && newAmount.compareTo(originalAmt) != 0);
                     item.setAmountModified(isModified);
                 }
             }
@@ -871,7 +849,7 @@ public class PricingSessionsView extends Main {
                     item.setTotalAmount(newAmount);
                     // Only mark as modified if the amount is different from the original
                     BigDecimal originalAmt = item.getOriginalAmount();
-                    boolean isModified = (originalAmt == null || newAmount.compareTo(originalAmt) != 0);
+                    boolean isModified = (originalAmt != null && newAmount.compareTo(originalAmt) != 0);
                     item.setAmountModified(isModified);
                 }
             }
@@ -934,7 +912,7 @@ public class PricingSessionsView extends Main {
                     item.setTotalAmount(newAmountValue);
                     // Only mark as modified if the amount is different from the original
                     BigDecimal originalAmt = item.getOriginalAmount();
-                    boolean isModified = (originalAmt == null || newAmountValue.compareTo(originalAmt) != 0);
+                    boolean isModified = (originalAmt != null && newAmountValue.compareTo(originalAmt) != 0);
                     item.setAmountModified(isModified);
                 }
             }
@@ -947,7 +925,7 @@ public class PricingSessionsView extends Main {
                     item.setTotalAmount(newAmountValue);
                     // Only mark as modified if the amount is different from the original
                     BigDecimal originalAmt = item.getOriginalAmount();
-                    boolean isModified = (originalAmt == null || newAmountValue.compareTo(originalAmt) != 0);
+                    boolean isModified = (originalAmt != null && newAmountValue.compareTo(originalAmt) != 0);
                     item.setAmountModified(isModified);
                 }
             }
@@ -963,7 +941,7 @@ public class PricingSessionsView extends Main {
                     item.setTotalAmount(newAmountValue);
                     // Only mark as modified if the amount is different from the original
                     BigDecimal originalAmt = item.getOriginalAmount();
-                    boolean isModified = (originalAmt == null || newAmountValue.compareTo(originalAmt) != 0);
+                    boolean isModified = (originalAmt != null && newAmountValue.compareTo(originalAmt) != 0);
                     item.setAmountModified(isModified);
                 }
             }
@@ -1009,68 +987,10 @@ public class PricingSessionsView extends Main {
             return;
         }
 
-        Customer customer = customerRepository.findByCustomerCode(customerCode)
-                .orElse(null);
-
-        if (customer == null) {
-            return;
-        }
-
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Edit Customer");
-        dialog.setWidth("500px");
-
-        VerticalLayout dialogLayout = new VerticalLayout();
-        dialogLayout.setSpacing(true);
-        dialogLayout.setPadding(false);
-
-        // Customer code (read-only)
-        TextField customerCodeField = new TextField("Customer Code");
-        customerCodeField.setValue(customer.getCustomerCode());
-        customerCodeField.setReadOnly(true);
-        customerCodeField.setWidthFull();
-
-        // Customer name (read-only)
-        TextField customerNameField = new TextField("Customer Name");
-        customerNameField.setValue(customer.getCustomerName());
-        customerNameField.setReadOnly(true);
-        customerNameField.setWidthFull();
-
-        // Customer rating (stored from last calculation, editable)
-        TextField customerRatingField = new TextField("Customer Rating");
-        if (customer.getCustomerRating() != null && !customer.getCustomerRating().trim().isEmpty()) {
-            customerRatingField.setValue(customer.getCustomerRating());
-        }
-        customerRatingField.setWidthFull();
-        customerRatingField.setHelperText("Auto-calculated during import. Use 'Recalculate All Ratings' button to refresh.");
-
-        // Notes (editable)
-        TextArea notesField = new TextArea("Notes");
-        if (customer.getNotes() != null) {
-            notesField.setValue(customer.getNotes());
-        }
-        notesField.setWidthFull();
-        notesField.setHeight("150px");
-
-        dialogLayout.add(customerCodeField, customerNameField, customerRatingField, notesField);
-
-        // Buttons
-        Button saveButton = new Button("Save", event -> {
-            customer.setCustomerRating(customerRatingField.getValue());
-            customer.setNotes(notesField.getValue());
-            customerRepository.save(customer);
-            dialog.close();
+        customerRepository.findByCustomerCode(customerCode).ifPresent(customer -> {
+            CustomerEditDialog dialog = new CustomerEditDialog(customer, customerRepository);
+            dialog.open(null); // No callback needed for this view
         });
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        Button cancelButton = new Button("Cancel", event -> dialog.close());
-
-        HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
-        buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-        buttonLayout.setWidthFull();
-
-        dialog.add(dialogLayout, buttonLayout);
-        dialog.open();
     }
 
     private void updateTitleStyle() {
@@ -1091,8 +1011,7 @@ public class PricingSessionsView extends Main {
         // If we have a current session, save directly without showing dialog
         if (currentSession != null) {
             try {
-                PricingSession savedSession = pricingSessionService.saveSession(currentSession.getSessionName(), backingList);
-                currentSession = savedSession;
+                currentSession = pricingSessionService.saveSession(currentSession.getSessionName(), backingList);
                 hasUnsavedChanges = false;
                 updateTitleStyle();
 
@@ -1186,13 +1105,22 @@ public class PricingSessionsView extends Main {
         if (hasUnsavedChanges) {
             ConfirmDialog confirmDialog = new ConfirmDialog();
             confirmDialog.setHeader("Unsaved Changes");
-            confirmDialog.setText("You have unsaved changes. What would you like to do?");
 
+            // Make the message more informative
+            String message = "You have unsaved changes in your current pricing session.";
+            if (currentSession != null) {
+                message += "\n\nCurrent session: " + currentSession.getSessionName();
+            }
+            confirmDialog.setText(message);
+
+            // Configure Cancel button - this should be easily accessible
             confirmDialog.setCancelable(true);
             confirmDialog.setCancelText("Cancel");
+            confirmDialog.setCancelButtonTheme("tertiary");
 
+            // Configure Save & Load button (primary action)
             confirmDialog.setConfirmText("Save & Load");
-            confirmDialog.setConfirmButtonTheme("primary");
+            confirmDialog.setConfirmButtonTheme("success primary");
             confirmDialog.addConfirmListener(e -> {
                 // Save current session first
                 if (currentSession != null) {
@@ -1200,22 +1128,27 @@ public class PricingSessionsView extends Main {
                         pricingSessionService.saveSession(currentSession.getSessionName(), backingList);
                         hasUnsavedChanges = false;
                         updateTitleStyle();
+                        Notification.show("Session saved successfully", 3000, Notification.Position.BOTTOM_START)
+                                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                         showLoadSessionDialog();
                     } catch (Exception ex) {
                         Notification.show("Error saving session: " + ex.getMessage(), 5000, Notification.Position.BOTTOM_START)
                                 .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                        // Don't proceed to load dialog if save failed
                     }
                 } else {
-                    // No current session, need to prompt for name first
-                    openSaveSessionDialog();
+                    // No current session - save first with a name, then show load dialog
+                    openSaveSessionDialogThenLoad();
                 }
             });
 
+            // Configure Discard & Load button (destructive action)
             confirmDialog.setRejectText("Discard & Load");
-            confirmDialog.setRejectButtonTheme("error");
+            confirmDialog.setRejectButtonTheme("error tertiary");
             confirmDialog.addRejectListener(e -> {
                 hasUnsavedChanges = false;
                 updateTitleStyle();
+                Notification.show("Changes discarded", 3000, Notification.Position.BOTTOM_START);
                 showLoadSessionDialog();
             });
 
@@ -1223,6 +1156,79 @@ public class PricingSessionsView extends Main {
         } else {
             showLoadSessionDialog();
         }
+    }
+
+    /**
+     * Opens the save session dialog, and upon successful save, opens the load session dialog
+     */
+    private void openSaveSessionDialogThenLoad() {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Save Session Before Loading");
+        dialog.setWidth("400px");
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setSpacing(true);
+        dialogLayout.setPadding(false);
+
+        Span instructionText = new Span("Please provide a name for your current session before loading another one.");
+        instructionText.getStyle().set("color", "var(--lumo-secondary-text-color)");
+
+        TextField sessionNameField = new TextField("Session Name");
+        sessionNameField.setWidthFull();
+        sessionNameField.setRequired(true);
+        sessionNameField.setPlaceholder("Enter session name");
+        sessionNameField.focus();
+
+        TextArea notesField = new TextArea("Notes (Optional)");
+        notesField.setWidthFull();
+        notesField.setPlaceholder("Add any notes about this session");
+
+        dialogLayout.add(instructionText, sessionNameField, notesField);
+
+        Button saveAndLoadButton = new Button("Save & Load", event -> {
+            String sessionName = sessionNameField.getValue();
+            if (sessionName == null || sessionName.trim().isEmpty()) {
+                Notification.show("Please enter a session name", 3000, Notification.Position.BOTTOM_START)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                sessionNameField.focus();
+                return;
+            }
+
+            try {
+                String notes = notesField.getValue();
+                if (notes != null && !notes.trim().isEmpty()) {
+                    // If notes were provided, we'd need to update the session
+                    // For now, just save with the name
+                }
+
+                pricingSessionService.saveSession(sessionName.trim(), backingList);
+                hasUnsavedChanges = false;
+                updateTitleStyle();
+
+                Notification.show("Session '" + sessionName + "' saved successfully", 3000, Notification.Position.BOTTOM_START)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+
+                dialog.close();
+                showLoadSessionDialog();
+            } catch (Exception ex) {
+                Notification.show("Error saving session: " + ex.getMessage(), 5000, Notification.Position.BOTTOM_START)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+        });
+        saveAndLoadButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        Button cancelButton = new Button("Cancel", event -> dialog.close());
+
+        HorizontalLayout buttonLayout = new HorizontalLayout(saveAndLoadButton, cancelButton);
+        buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        buttonLayout.setWidthFull();
+
+        VerticalLayout fullLayout = new VerticalLayout(dialogLayout, buttonLayout);
+        fullLayout.setSpacing(true);
+        fullLayout.setPadding(true);
+
+        dialog.add(fullLayout);
+        dialog.open();
     }
 
     private void showLoadSessionDialog() {
@@ -1240,19 +1246,19 @@ public class PricingSessionsView extends Main {
         Grid<PricingSession> sessionsGrid = new Grid<>(PricingSession.class, false);
         sessionsGrid.setSizeFull();
 
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         sessionsGrid.addColumn(PricingSession::getSessionName)
                 .setHeader("Session Name")
                 .setAutoWidth(true)
                 .setResizable(true);
 
-        sessionsGrid.addColumn(session -> session.getCreatedDate() != null ? session.getCreatedDate().format(dateFormatter) : "")
+        sessionsGrid.addColumn(session -> session.getCreatedDate() != null ? session.getCreatedDate().format(dateTimeFormatter) : "")
                 .setHeader("Created Date")
                 .setAutoWidth(true)
                 .setResizable(true);
 
-        sessionsGrid.addColumn(session -> session.getLastModifiedDate() != null ? session.getLastModifiedDate().format(dateFormatter) : "")
+        sessionsGrid.addColumn(session -> session.getLastModifiedDate() != null ? session.getLastModifiedDate().format(dateTimeFormatter) : "")
                 .setHeader("Last Modified")
                 .setAutoWidth(true)
                 .setResizable(true);
