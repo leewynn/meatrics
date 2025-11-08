@@ -10,7 +10,8 @@
       "Bash(java -version:*)",
       "Bash(chmod:*)",
       "WebFetch(domain:www.jooq.org)",
-      "Bash(mvn clean compile:*)"
+      "Bash(mvn clean compile:*)",
+      "Bash(mvn compile:*)"
     ],
     "deny": [],
     "ask": []

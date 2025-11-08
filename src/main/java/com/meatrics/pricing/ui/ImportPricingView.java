@@ -31,7 +31,7 @@ import java.io.FileInputStream;
  */
 @Route("import-pricing")
 @PageTitle("Import Pricing")
-@Menu(order = 2, icon = "vaadin:upload", title = "Import Pricing")
+@Menu(order = 3, icon = "vaadin:upload", title = "Import Pricing")
 public class ImportPricingView extends Main {
 
     private final PricingImportService pricingImportService;

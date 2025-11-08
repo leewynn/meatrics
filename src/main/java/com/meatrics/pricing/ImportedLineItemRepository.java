@@ -3,10 +3,18 @@ package com.meatrics.pricing;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static com.meatrics.generated.Tables.CUSTOMERS;
 import static com.meatrics.generated.Tables.IMPORTED_LINE_ITEMS;
+import static com.meatrics.generated.Tables.PRODUCT_COSTS;
+import static org.jooq.impl.DSL.coalesce;
+import static org.jooq.impl.DSL.sum;
+import static org.jooq.impl.DSL.field;
 
 /**
  * Repository for ImportedLineItem entities using jOOQ
@@ -154,6 +162,116 @@ public class ImportedLineItemRepository {
                 .from(IMPORTED_LINE_ITEMS)
                 .where(IMPORTED_LINE_ITEMS.FILENAME.eq(filename))
                 .fetchOne(0, int.class);
+    }
+
+    /**
+     * Get customer rating report data for a date range
+     * Aggregates sales data by customer and joins with customer ratings
+     */
+    public List<CustomerRatingReportDTO> getCustomerRatingReport(LocalDate startDate, LocalDate endDate) {
+        var totalCost = sum(coalesce(IMPORTED_LINE_ITEMS.COST, BigDecimal.ZERO)).as("total_cost");
+        var totalAmount = sum(coalesce(IMPORTED_LINE_ITEMS.AMOUNT, BigDecimal.ZERO)).as("total_amount");
+
+        return dsl.select(
+                        IMPORTED_LINE_ITEMS.CUSTOMER_CODE,
+                        IMPORTED_LINE_ITEMS.CUSTOMER_NAME,
+                        totalCost,
+                        totalAmount,
+                        CUSTOMERS.CUSTOMER_RATING
+                )
+                .from(IMPORTED_LINE_ITEMS)
+                .leftJoin(CUSTOMERS).on(IMPORTED_LINE_ITEMS.CUSTOMER_CODE.eq(CUSTOMERS.CUSTOMER_CODE))
+                .where(IMPORTED_LINE_ITEMS.TRANSACTION_DATE.between(startDate, endDate))
+                .groupBy(
+                        IMPORTED_LINE_ITEMS.CUSTOMER_CODE,
+                        IMPORTED_LINE_ITEMS.CUSTOMER_NAME,
+                        CUSTOMERS.CUSTOMER_RATING
+                )
+                .orderBy(totalAmount.desc())
+                .fetch(record -> {
+                    String customerCode = record.get(IMPORTED_LINE_ITEMS.CUSTOMER_CODE);
+                    String customerName = record.get(IMPORTED_LINE_ITEMS.CUSTOMER_NAME);
+                    BigDecimal cost = record.get(totalCost, BigDecimal.class);
+                    BigDecimal amount = record.get(totalAmount, BigDecimal.class);
+                    String ratingString = record.get(CUSTOMERS.CUSTOMER_RATING);
+
+                    // Calculate GP%
+                    BigDecimal gpPercentage = CustomerRatingReportDTO.calculateGPPercentage(amount, cost);
+
+                    // Create DTO
+                    CustomerRatingReportDTO dto = new CustomerRatingReportDTO(
+                            customerCode,
+                            customerName,
+                            cost != null ? cost : BigDecimal.ZERO,
+                            amount != null ? amount : BigDecimal.ZERO,
+                            gpPercentage
+                    );
+
+                    // Parse the rating string into separate fields
+                    CustomerRatingReportDTO.parseRating(dto, ratingString);
+
+                    return dto;
+                });
+    }
+
+    /**
+     * Get cost report data for a specific import file
+     * Shows line items where the line item cost price is lower than the standard cost
+     *
+     * @param filename The import filename to filter by
+     * @return List of cost report DTOs ordered by transaction date desc, customer name, product code
+     */
+    public List<CostReportDTO> getCostReport(String filename) {
+        // Calculate line_item_cost_price = cost / quantity
+        var lineItemCostPrice = field("({0} / NULLIF({1}, 0))",
+                BigDecimal.class,
+                IMPORTED_LINE_ITEMS.COST,
+                IMPORTED_LINE_ITEMS.QUANTITY).as("line_item_cost_price");
+
+        // Calculate difference = stdcost - line_item_cost_price
+        var difference = field("({0} - ({1} / NULLIF({2}, 0)))",
+                BigDecimal.class,
+                PRODUCT_COSTS.STANDARD_COST,
+                IMPORTED_LINE_ITEMS.COST,
+                IMPORTED_LINE_ITEMS.QUANTITY).as("difference");
+
+        return dsl.select(
+                        IMPORTED_LINE_ITEMS.PRODUCT_CODE,
+                        IMPORTED_LINE_ITEMS.PRODUCT_DESCRIPTION,
+                        IMPORTED_LINE_ITEMS.CUSTOMER_NAME,
+                        IMPORTED_LINE_ITEMS.INVOICE_NUMBER,
+                        IMPORTED_LINE_ITEMS.TRANSACTION_DATE,
+                        IMPORTED_LINE_ITEMS.QUANTITY,
+                        IMPORTED_LINE_ITEMS.COST,
+                        PRODUCT_COSTS.STANDARD_COST,
+                        lineItemCostPrice,
+                        difference
+                )
+                .from(IMPORTED_LINE_ITEMS)
+                .leftJoin(PRODUCT_COSTS).on(IMPORTED_LINE_ITEMS.PRODUCT_CODE.eq(PRODUCT_COSTS.PRODUCT_CODE))
+                .where(IMPORTED_LINE_ITEMS.FILENAME.eq(filename))
+                .and(IMPORTED_LINE_ITEMS.QUANTITY.gt(BigDecimal.ZERO)) // Exclude zero or negative quantities
+                .and(PRODUCT_COSTS.STANDARD_COST.isNotNull()) // Only include products with standard cost
+                .and(field("({0} / NULLIF({1}, 0)) < {2}",
+                        Boolean.class,
+                        IMPORTED_LINE_ITEMS.COST,
+                        IMPORTED_LINE_ITEMS.QUANTITY,
+                        PRODUCT_COSTS.STANDARD_COST)) // Filter: line_item_cost_price < stdcost
+                .orderBy(
+                        IMPORTED_LINE_ITEMS.TRANSACTION_DATE.desc(),
+                        IMPORTED_LINE_ITEMS.CUSTOMER_NAME.asc(),
+                        IMPORTED_LINE_ITEMS.PRODUCT_CODE.asc()
+                )
+                .fetch(record -> new CostReportDTO(
+                        record.get(IMPORTED_LINE_ITEMS.PRODUCT_CODE),
+                        record.get(IMPORTED_LINE_ITEMS.PRODUCT_DESCRIPTION),
+                        record.get(IMPORTED_LINE_ITEMS.CUSTOMER_NAME),
+                        record.get(IMPORTED_LINE_ITEMS.INVOICE_NUMBER),
+                        record.get(IMPORTED_LINE_ITEMS.TRANSACTION_DATE),
+                        record.get(IMPORTED_LINE_ITEMS.QUANTITY),
+                        record.get(IMPORTED_LINE_ITEMS.COST),
+                        record.get(PRODUCT_COSTS.STANDARD_COST)
+                ));
     }
 
     /**

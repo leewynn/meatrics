@@ -355,6 +355,29 @@ public class PricingImportService {
     }
 
     /**
+     * Get customer rating report for a specific date range
+     * Aggregates sales data by customer and joins with customer ratings
+     *
+     * @param startDate Start of the date range
+     * @param endDate End of the date range
+     * @return List of customer rating report data
+     */
+    public List<CustomerRatingReportDTO> getCustomerRatingReport(LocalDate startDate, LocalDate endDate) {
+        return importedLineItemRepository.getCustomerRatingReport(startDate, endDate);
+    }
+
+    /**
+     * Get cost report for a specific import file
+     * Shows line items where the line item cost price is lower than the standard cost
+     *
+     * @param filename The import filename to filter by
+     * @return List of cost report data
+     */
+    public List<CostReportDTO> getCostReport(String filename) {
+        return importedLineItemRepository.getCostReport(filename);
+    }
+
+    /**
      * Create or update customer records from imported line items
      */
     private void createOrUpdateCustomers(List<ImportedLineItem> lineItems) {

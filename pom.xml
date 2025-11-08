@@ -86,39 +86,6 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>sql-maven-plugin</artifactId>
-                <version>3.0.0</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.postgresql</groupId>
-                        <artifactId>postgresql</artifactId>
-                        <version>42.7.4</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <driver>org.postgresql.Driver</driver>
-                    <url>jdbc:postgresql://${db.host}:${db.port}/postgres</url>
-                    <username>${db.username}</username>
-                    <password>${db.password}</password>
-                    <autocommit>true</autocommit>
-                    <onError>continue</onError>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>create-database</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>execute</goal>
-                        </goals>
-                        <configuration>
-                            <sqlCommand>CREATE DATABASE ${db.name}</sqlCommand>
-                            <onError>continue</onError>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
                 <version>${vaadin.version}</version>

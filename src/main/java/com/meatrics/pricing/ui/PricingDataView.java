@@ -5,6 +5,7 @@ import com.meatrics.pricing.CustomerRatingService;
 import com.meatrics.pricing.CustomerRepository;
 import com.meatrics.pricing.ImportedLineItem;
 import com.meatrics.pricing.PricingImportService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -32,6 +33,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +43,8 @@ import java.util.stream.Collectors;
 @PageTitle("Pricing Data")
 @Menu(order = 0, icon = "vaadin:table", title = "Pricing Data")
 public class PricingDataView extends Main {
+
+    private static final String STORAGE_PREFIX = "PricingDataView-column-";
 
     private final PricingImportService pricingImportService;
     private final CustomerRepository customerRepository;
@@ -53,6 +57,21 @@ public class PricingDataView extends Main {
 
     // Backing list that holds date-filtered records
     private List<ImportedLineItem> backingList = new ArrayList<>();
+
+    // Column visibility checkboxes
+    private Checkbox customerNameCheck;
+    private Checkbox customerRatingCheck;
+    private Checkbox invoiceCheck;
+    private Checkbox dateCheck;
+    private Checkbox productCodeCheck;
+    private Checkbox productCheck;
+    private Checkbox quantityCheck;
+    private Checkbox amountCheck;
+    private Checkbox unitSellPriceCheck;
+    private Checkbox costCheck;
+    private Checkbox unitCostPriceCheck;
+    private Checkbox grossProfitCheck;
+    private Checkbox outstandingCheck;
 
     public PricingDataView(PricingImportService pricingImportService,
                            CustomerRepository customerRepository,
@@ -75,10 +94,34 @@ public class PricingDataView extends Main {
         startDatePicker = new DatePicker("Start Date");
         startDatePicker.setPlaceholder("Select start date");
         startDatePicker.setClearButtonVisible(true);
+        startDatePicker.setLocale(Locale.UK); // Use dd/MM/yyyy format
+        // Set default to first day of current month
+        LocalDate now = LocalDate.now();
+        startDatePicker.setValue(now.withDayOfMonth(1));
 
         endDatePicker = new DatePicker("End Date");
         endDatePicker.setPlaceholder("Select end date");
         endDatePicker.setClearButtonVisible(true);
+        endDatePicker.setLocale(Locale.UK); // Use dd/MM/yyyy format
+        // Set default to last day of current month
+        endDatePicker.setValue(now.withDayOfMonth(now.lengthOfMonth()));
+
+        // Add date validation listeners
+        startDatePicker.addValueChangeListener(event -> {
+            LocalDate startDate = event.getValue();
+            LocalDate endDate = endDatePicker.getValue();
+            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                endDatePicker.setValue(startDate);
+            }
+        });
+
+        endDatePicker.addValueChangeListener(event -> {
+            LocalDate endDate = event.getValue();
+            LocalDate startDate = startDatePicker.getValue();
+            if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+                startDatePicker.setValue(endDate);
+            }
+        });
 
         Button applyFilterButton = new Button("Apply Filter", new Icon(VaadinIcon.FILTER));
         applyFilterButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -122,7 +165,11 @@ public class PricingDataView extends Main {
         mainLayout.add(title, filterLayout, columnToggles, dataGrid);
 
         add(mainLayout);
-        refreshGrid();
+
+        // Restore column visibility from localStorage
+        restoreColumnVisibility();
+
+        // Removed automatic data loading - data loads only when user clicks "Apply Filter"
     }
 
     private Grid<ImportedLineItem> createDataGrid() {
@@ -254,57 +301,83 @@ public class PricingDataView extends Main {
         checkboxLayout.setSpacing(true);
 
         // Create checkboxes for each column
-        Checkbox customerNameCheck = new Checkbox("Customer Name", true);
-        customerNameCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("customerName").setVisible(e.getValue()));
+        customerNameCheck = new Checkbox("Customer Name", true);
+        customerNameCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("customerName").setVisible(e.getValue());
+            saveColumnVisibility("customerName", e.getValue());
+        });
 
-        Checkbox customerRatingCheck = new Checkbox("Customer Rating", true);
-        customerRatingCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("customerRating").setVisible(e.getValue()));
+        customerRatingCheck = new Checkbox("Customer Rating", true);
+        customerRatingCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("customerRating").setVisible(e.getValue());
+            saveColumnVisibility("customerRating", e.getValue());
+        });
 
-        Checkbox invoiceCheck = new Checkbox("Invoice #", true);
-        invoiceCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("invoiceNumber").setVisible(e.getValue()));
+        invoiceCheck = new Checkbox("Invoice #", true);
+        invoiceCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("invoiceNumber").setVisible(e.getValue());
+            saveColumnVisibility("invoiceNumber", e.getValue());
+        });
 
-        Checkbox dateCheck = new Checkbox("Date", true);
-        dateCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("transactionDate").setVisible(e.getValue()));
+        dateCheck = new Checkbox("Date", true);
+        dateCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("transactionDate").setVisible(e.getValue());
+            saveColumnVisibility("transactionDate", e.getValue());
+        });
 
-        Checkbox productCodeCheck = new Checkbox("Product Code", true);
-        productCodeCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("productCode").setVisible(e.getValue()));
+        productCodeCheck = new Checkbox("Product Code", true);
+        productCodeCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("productCode").setVisible(e.getValue());
+            saveColumnVisibility("productCode", e.getValue());
+        });
 
-        Checkbox productCheck = new Checkbox("Product", true);
-        productCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("productDescription").setVisible(e.getValue()));
+        productCheck = new Checkbox("Product", true);
+        productCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("productDescription").setVisible(e.getValue());
+            saveColumnVisibility("productDescription", e.getValue());
+        });
 
-        Checkbox quantityCheck = new Checkbox("Quantity", true);
-        quantityCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("quantity").setVisible(e.getValue()));
+        quantityCheck = new Checkbox("Quantity", true);
+        quantityCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("quantity").setVisible(e.getValue());
+            saveColumnVisibility("quantity", e.getValue());
+        });
 
-        Checkbox amountCheck = new Checkbox("Amount", true);
-        amountCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("amount").setVisible(e.getValue()));
+        amountCheck = new Checkbox("Amount", true);
+        amountCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("amount").setVisible(e.getValue());
+            saveColumnVisibility("amount", e.getValue());
+        });
 
-        Checkbox unitSellPriceCheck = new Checkbox("Unit Sell Price", true);
-        unitSellPriceCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("unitSellPrice").setVisible(e.getValue()));
+        unitSellPriceCheck = new Checkbox("Unit Sell Price", true);
+        unitSellPriceCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("unitSellPrice").setVisible(e.getValue());
+            saveColumnVisibility("unitSellPrice", e.getValue());
+        });
 
-        Checkbox costCheck = new Checkbox("Cost", true);
-        costCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("cost").setVisible(e.getValue()));
+        costCheck = new Checkbox("Cost", true);
+        costCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("cost").setVisible(e.getValue());
+            saveColumnVisibility("cost", e.getValue());
+        });
 
-        Checkbox unitCostPriceCheck = new Checkbox("Unit Cost Price", true);
-        unitCostPriceCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("unitCostPrice").setVisible(e.getValue()));
+        unitCostPriceCheck = new Checkbox("Unit Cost Price", true);
+        unitCostPriceCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("unitCostPrice").setVisible(e.getValue());
+            saveColumnVisibility("unitCostPrice", e.getValue());
+        });
 
-        Checkbox grossProfitCheck = new Checkbox("Gross Profit", true);
-        grossProfitCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("grossProfit").setVisible(e.getValue()));
+        grossProfitCheck = new Checkbox("Gross Profit", true);
+        grossProfitCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("grossProfit").setVisible(e.getValue());
+            saveColumnVisibility("grossProfit", e.getValue());
+        });
 
-        Checkbox outstandingCheck = new Checkbox("Outstanding", true);
-        outstandingCheck.addValueChangeListener(e ->
-            dataGrid.getColumnByKey("outstanding").setVisible(e.getValue()));
+        outstandingCheck = new Checkbox("Outstanding", true);
+        outstandingCheck.addValueChangeListener(e -> {
+            dataGrid.getColumnByKey("outstanding").setVisible(e.getValue());
+            saveColumnVisibility("outstanding", e.getValue());
+        });
 
         checkboxLayout.add(
             customerNameCheck, customerRatingCheck, invoiceCheck, dateCheck,
@@ -435,11 +508,56 @@ public class PricingDataView extends Main {
     }
 
     private void clearFilter() {
-        startDatePicker.clear();
-        endDatePicker.clear();
+        // Only clear customer and product filters, keep date range
         customerNameFilter.clear();
         productFilter.clear();
-        refreshGrid();
+        applySecondaryFilters();
+    }
+
+    /**
+     * Save column visibility to browser localStorage
+     */
+    private void saveColumnVisibility(String columnKey, boolean visible) {
+        getElement().executeJs(
+            "localStorage.setItem($0, $1)",
+            STORAGE_PREFIX + columnKey,
+            String.valueOf(visible)
+        );
+    }
+
+    /**
+     * Restore column visibility from browser localStorage
+     */
+    private void restoreColumnVisibility() {
+        restoreColumn("customerName", customerNameCheck);
+        restoreColumn("customerRating", customerRatingCheck);
+        restoreColumn("invoiceNumber", invoiceCheck);
+        restoreColumn("transactionDate", dateCheck);
+        restoreColumn("productCode", productCodeCheck);
+        restoreColumn("productDescription", productCheck);
+        restoreColumn("quantity", quantityCheck);
+        restoreColumn("amount", amountCheck);
+        restoreColumn("unitSellPrice", unitSellPriceCheck);
+        restoreColumn("cost", costCheck);
+        restoreColumn("unitCostPrice", unitCostPriceCheck);
+        restoreColumn("grossProfit", grossProfitCheck);
+        restoreColumn("outstanding", outstandingCheck);
+    }
+
+    /**
+     * Restore individual column visibility from localStorage
+     */
+    private void restoreColumn(String columnKey, Checkbox checkbox) {
+        UI ui = UI.getCurrent();
+        getElement().executeJs(
+            "return localStorage.getItem($0)",
+            STORAGE_PREFIX + columnKey
+        ).then(String.class, value -> {
+            if ("false".equals(value)) {
+                ui.access(() -> checkbox.setValue(false)); // This triggers the listener which updates grid and saves
+            }
+            // If true or null, keep default (true)
+        });
     }
 
     private void openCustomerEditDialog(ImportedLineItem item) {
