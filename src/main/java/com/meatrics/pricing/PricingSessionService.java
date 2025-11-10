@@ -153,6 +153,13 @@ public class PricingSessionService {
         lineItem.setOriginalAmount(item.getOriginalAmount() != null ? item.getOriginalAmount() : item.getTotalAmount());
         lineItem.setTotalCost(item.getTotalCost());
         lineItem.setAmountModified(item.isAmountModified());
+
+        // Historical pricing data (critical for MAINTAIN_GP_PERCENT rule)
+        lineItem.setLastCost(item.getLastCost());
+        lineItem.setLastUnitSellPrice(item.getLastUnitSellPrice());
+        lineItem.setIncomingCost(item.getIncomingCost());
+        lineItem.setPrimaryGroup(item.getPrimaryGroup());
+
         return lineItem;
     }
 
@@ -171,6 +178,13 @@ public class PricingSessionService {
         groupedItem.setOriginalAmount(item.getOriginalAmount());
         groupedItem.setTotalCost(item.getTotalCost());
         groupedItem.setAmountModified(item.getAmountModified() != null ? item.getAmountModified() : false);
+
+        // Historical pricing data (critical for MAINTAIN_GP_PERCENT rule)
+        groupedItem.setLastCost(item.getLastCost());
+        groupedItem.setLastUnitSellPrice(item.getLastUnitSellPrice());
+        groupedItem.setIncomingCost(item.getIncomingCost());
+        groupedItem.setPrimaryGroup(item.getPrimaryGroup());
+
         return groupedItem;
     }
 }

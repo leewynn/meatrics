@@ -86,4 +86,11 @@ public class CustomerRepository {
         customer.setModifiedDate(record.get(CUSTOMERS.MODIFIED_DATE));
         return customer;
     }
+
+    /**
+     * Find customer by code - convenience method for pricing engine
+     */
+    public Customer findByCode(String customerCode) {
+        return findByCustomerCode(customerCode).orElse(null);
+    }
 }

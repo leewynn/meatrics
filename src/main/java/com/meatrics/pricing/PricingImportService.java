@@ -369,9 +369,7 @@ public class PricingImportService {
      * Queries base table with grouping since view doesn't have transaction_date
      */
     public List<GroupedLineItem> getGroupedLineItemsByDateRange(LocalDate startDate, LocalDate endDate) {
-        return groupedLineItemRepository.findByDateRange(startDate, endDate).stream()
-                .map(GroupedLineItem::fromRecord)
-                .toList();
+        return groupedLineItemRepository.findByDateRange(startDate, endDate);
     }
 
     /**

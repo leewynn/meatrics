@@ -45,10 +45,11 @@ import java.util.stream.Collectors;
 
 /**
  * Pricing sessions view for editing and adjusting prices
+ * DISABLED - Replaced by PricingSessionsViewNew
  */
-@Route("pricing-sessions")
-@PageTitle("Pricing Sessions")
-@Menu(order = 1, icon = "vaadin:edit", title = "Pricing Sessions")
+// @Route("pricing-sessions")
+// @PageTitle("Pricing Sessions")
+// @Menu(order = 1, icon = "vaadin:edit", title = "Pricing Sessions")
 public class PricingSessionsView extends AbstractGridView {
 
     private static final String STORAGE_PREFIX = "PricingSessionsView-column-";
@@ -666,7 +667,7 @@ public class PricingSessionsView extends AbstractGridView {
                 // Use BigDecimal to avoid floating-point precision issues
                 BigDecimal result = BigDecimal.valueOf(originalUnitSellPrice)
                     .add(BigDecimal.valueOf(addValue))
-                    .setScale(2, java.math.RoundingMode.HALF_UP);
+                    .setScale(6, java.math.RoundingMode.HALF_UP);
                 newUnitSellPriceField.setValue(result.doubleValue());
                 isUpdatingFromAddField[0] = false;
 

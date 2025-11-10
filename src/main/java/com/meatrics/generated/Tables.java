@@ -8,6 +8,7 @@ import com.meatrics.generated.tables.CostImportSummary;
 import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
+import com.meatrics.generated.tables.PricingRule;
 import com.meatrics.generated.tables.PricingSessionLineItems;
 import com.meatrics.generated.tables.PricingSessions;
 import com.meatrics.generated.tables.ProductCosts;
@@ -30,7 +31,8 @@ public class Tables {
     public static final CostImportSummary COST_IMPORT_SUMMARY = CostImportSummary.COST_IMPORT_SUMMARY;
 
     /**
-     * The table <code>public.customers</code>.
+     * Customer master data. Customer-specific pricing is determined by
+     * existence of pricing rules with matching customer_code.
      */
     public static final Customers CUSTOMERS = Customers.CUSTOMERS;
 
@@ -43,6 +45,11 @@ public class Tables {
      * The table <code>public.imported_line_items</code>.
      */
     public static final ImportedLineItems IMPORTED_LINE_ITEMS = ImportedLineItems.IMPORTED_LINE_ITEMS;
+
+    /**
+     * Dynamic pricing rules for calculating sell prices based on conditions
+     */
+    public static final PricingRule PRICING_RULE = PricingRule.PRICING_RULE;
 
     /**
      * Line items within a pricing session, grouped by customer and product

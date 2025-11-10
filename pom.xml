@@ -159,7 +159,7 @@
                                 <database>
                                     <name>org.jooq.meta.postgres.PostgresDatabase</name>
                                     <includes>.*</includes>
-                                    <excludes>databasechangelog.*</excludes>
+                                    <excludes>databasechangelog.*|pricing_session_line_item_rules</excludes>
                                     <inputSchema>public</inputSchema>
                                 </database>
                                 <target>
@@ -246,7 +246,7 @@
                                 <database>
                                     <name>org.jooq.meta.postgres.PostgresDatabase</name>
                                     <includes>.*</includes>
-                                    <excludes>databasechangelog.*</excludes>
+                                    <excludes>databasechangelog.*|pricing_session_line_item_rules</excludes>
                                     <inputSchema>public</inputSchema>
                                 </database>
                                 <target>

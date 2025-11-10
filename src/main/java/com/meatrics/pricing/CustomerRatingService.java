@@ -34,7 +34,7 @@ public class CustomerRatingService {
         // Get all line items for this customer
         List<ImportedLineItem> items = importedLineItemRepository.findAll().stream()
                 .filter(item -> customerCode.equals(item.getCustomerCode()))
-                .collect(Collectors.toList());
+                .toList();
 
         if (items.isEmpty()) {
             return new CustomerRatingResult(0, 0, 0);
@@ -102,55 +102,32 @@ public class CustomerRatingService {
     }
 
     /**
-     * Claude's suggested formula: (Gross_Profit_Dollars × 0.7) + (Revenue_Percentile × 0.3)
+     * Option 4: Modified Current Formula (Quick Fix)
+     * Score = sqrt(Revenue_Score + Margin_Score)
+     * Where:
+     *   Revenue_Score = (amount / 1000) × 50
+     *   Margin_Score = GP% × 50
      */
     private int calculateClaudeRating(String customerCode, BigDecimal grossProfit, BigDecimal revenue) {
-        // Get all customers' revenue for percentile calculation
-        Map<String, BigDecimal> allCustomerRevenues = new HashMap<>();
-
-        for (ImportedLineItem item : importedLineItemRepository.findAll()) {
-            String code = item.getCustomerCode();
-            if (code != null && !code.trim().isEmpty()) {
-                BigDecimal amount = item.getAmount() != null ? item.getAmount() : BigDecimal.ZERO;
-                allCustomerRevenues.merge(code, amount, BigDecimal::add);
-            }
+        // Calculate GP%
+        BigDecimal gpPercentage = BigDecimal.ZERO;
+        if (revenue.compareTo(BigDecimal.ZERO) > 0) {
+            gpPercentage = grossProfit.divide(revenue, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
         }
 
-        // Calculate revenue percentile (0-100)
-        int revenuePercentile = calculatePercentile(revenue, allCustomerRevenues.values());
+        // Revenue_Score = (amount / 1000) × 50
+        BigDecimal revenueScore = revenue.divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("50"));
 
-        // Weighted formula: (GP × 0.7) + (Revenue_Percentile × 0.3)
-        BigDecimal gpPart = grossProfit.multiply(new BigDecimal("0.7"));
-        BigDecimal revenuePart = new BigDecimal(revenuePercentile).multiply(new BigDecimal("0.3"));
+        // Margin_Score = GP% × 50
+        BigDecimal marginScore = gpPercentage.multiply(new BigDecimal("50"));
 
-        BigDecimal result = gpPart.add(revenuePart);
+        // Score = sqrt(Revenue_Score + Margin_Score)
+        BigDecimal sum = revenueScore.add(marginScore);
+        double result = Math.sqrt(sum.doubleValue());
 
-        return result.intValue();
-    }
-
-    /**
-     * Calculate percentile rank (0-100) for a value within a collection
-     */
-    private int calculatePercentile(BigDecimal value, Collection<BigDecimal> allValues) {
-        if (allValues.isEmpty()) {
-            return 0;
-        }
-
-        List<BigDecimal> sorted = allValues.stream()
-                .sorted()
-                .collect(Collectors.toList());
-
-        int countBelow = 0;
-        for (BigDecimal v : sorted) {
-            if (v.compareTo(value) < 0) {
-                countBelow++;
-            }
-        }
-
-        // Percentile = (count below / total) * 100
-        double percentile = (countBelow * 100.0) / sorted.size();
-
-        return (int) Math.round(percentile);
+        return (int) Math.round(result);
     }
 
     /**

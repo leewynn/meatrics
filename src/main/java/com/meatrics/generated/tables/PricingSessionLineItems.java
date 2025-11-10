@@ -7,6 +7,7 @@ package com.meatrics.generated.tables;
 import com.meatrics.generated.Indexes;
 import com.meatrics.generated.Keys;
 import com.meatrics.generated.Public;
+import com.meatrics.generated.tables.PricingRule.PricingRulePath;
 import com.meatrics.generated.tables.PricingSessions.PricingSessionsPath;
 import com.meatrics.generated.tables.records.PricingSessionLineItemsRecord;
 
@@ -100,6 +101,12 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
     public final TableField<PricingSessionLineItemsRecord, String> PRODUCT_DESCRIPTION = createField(DSL.name("product_description"), SQLDataType.CLOB, this, "");
 
     /**
+     * The column <code>public.pricing_session_line_items.primary_group</code>.
+     * Product category/primary group for rule matching
+     */
+    public final TableField<PricingSessionLineItemsRecord, String> PRIMARY_GROUP = createField(DSL.name("primary_group"), SQLDataType.VARCHAR(255), this, "Product category/primary group for rule matching");
+
+    /**
      * The column <code>public.pricing_session_line_items.total_quantity</code>.
      */
     public final TableField<PricingSessionLineItemsRecord, BigDecimal> TOTAL_QUANTITY = createField(DSL.name("total_quantity"), SQLDataType.NUMERIC(19, 2), this, "");
@@ -128,6 +135,75 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
      * indicating whether the amount was modified from the original
      */
     public final TableField<PricingSessionLineItemsRecord, Boolean> AMOUNT_MODIFIED = createField(DSL.name("amount_modified"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "Flag indicating whether the amount was modified from the original");
+
+    /**
+     * The column <code>public.pricing_session_line_items.last_cost</code>.
+     * Historical average unit cost from imported data (used for GP%
+     * calculation)
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_COST = createField(DSL.name("last_cost"), SQLDataType.NUMERIC(19, 2), this, "Historical average unit cost from imported data (used for GP% calculation)");
+
+    /**
+     * The column
+     * <code>public.pricing_session_line_items.last_unit_sell_price</code>.
+     * Historical average unit sell price from imported data (used for GP%
+     * calculation)
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_UNIT_SELL_PRICE = createField(DSL.name("last_unit_sell_price"), SQLDataType.NUMERIC(19, 2), this, "Historical average unit sell price from imported data (used for GP% calculation)");
+
+    /**
+     * The column <code>public.pricing_session_line_items.last_amount</code>.
+     * Historical total amount (last_unit_sell_price × quantity)
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_AMOUNT = createField(DSL.name("last_amount"), SQLDataType.NUMERIC(19, 2), this, "Historical total amount (last_unit_sell_price × quantity)");
+
+    /**
+     * The column
+     * <code>public.pricing_session_line_items.last_gross_profit</code>.
+     * Historical gross profit (last_amount - last_cost × quantity)
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_GROSS_PROFIT = createField(DSL.name("last_gross_profit"), SQLDataType.NUMERIC(19, 2), this, "Historical gross profit (last_amount - last_cost × quantity)");
+
+    /**
+     * The column <code>public.pricing_session_line_items.incoming_cost</code>.
+     * Current cost from product_costs.stdcost (new cost for pricing)
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> INCOMING_COST = createField(DSL.name("incoming_cost"), SQLDataType.NUMERIC(19, 2), this, "Current cost from product_costs.stdcost (new cost for pricing)");
+
+    /**
+     * The column
+     * <code>public.pricing_session_line_items.new_unit_sell_price</code>. New
+     * unit sell price calculated by pricing rules or manually set
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_UNIT_SELL_PRICE = createField(DSL.name("new_unit_sell_price"), SQLDataType.NUMERIC(19, 2), this, "New unit sell price calculated by pricing rules or manually set");
+
+    /**
+     * The column <code>public.pricing_session_line_items.new_amount</code>. New
+     * total amount (new_unit_sell_price × quantity)
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_AMOUNT = createField(DSL.name("new_amount"), SQLDataType.NUMERIC(19, 2), this, "New total amount (new_unit_sell_price × quantity)");
+
+    /**
+     * The column
+     * <code>public.pricing_session_line_items.new_gross_profit</code>. New
+     * gross profit (new_amount - incoming_cost × quantity)
+     */
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_GROSS_PROFIT = createField(DSL.name("new_gross_profit"), SQLDataType.NUMERIC(19, 2), this, "New gross profit (new_amount - incoming_cost × quantity)");
+
+    /**
+     * The column
+     * <code>public.pricing_session_line_items.applied_rule_id</code>. Foreign
+     * key to pricing_rule table - which rule calculated this price (NULL if
+     * manual)
+     */
+    public final TableField<PricingSessionLineItemsRecord, Long> APPLIED_RULE_ID = createField(DSL.name("applied_rule_id"), SQLDataType.BIGINT, this, "Foreign key to pricing_rule table - which rule calculated this price (NULL if manual)");
+
+    /**
+     * The column
+     * <code>public.pricing_session_line_items.manual_override</code>. TRUE if
+     * user manually overrode the rule-calculated price
+     */
+    public final TableField<PricingSessionLineItemsRecord, Boolean> MANUAL_OVERRIDE = createField(DSL.name("manual_override"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "TRUE if user manually overrode the rule-calculated price");
 
     private PricingSessionLineItems(Name alias, Table<PricingSessionLineItemsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -200,7 +276,7 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_PRICING_SESSION_LINE_ITEMS_COMPOSITE, Indexes.IDX_PRICING_SESSION_LINE_ITEMS_SESSION_ID);
+        return Arrays.asList(Indexes.IDX_PRICING_SESSION_LINE_ITEMS_COMPOSITE, Indexes.IDX_PRICING_SESSION_LINE_ITEMS_RULE, Indexes.IDX_PRICING_SESSION_LINE_ITEMS_SESSION_ID);
     }
 
     @Override
@@ -215,7 +291,19 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
 
     @Override
     public List<ForeignKey<PricingSessionLineItemsRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.PRICING_SESSION_LINE_ITEMS__PRICING_SESSION_LINE_ITEMS_SESSION_ID_FKEY);
+        return Arrays.asList(Keys.PRICING_SESSION_LINE_ITEMS__FK_PRICING_SESSION_LINE_ITEMS_RULE, Keys.PRICING_SESSION_LINE_ITEMS__PRICING_SESSION_LINE_ITEMS_SESSION_ID_FKEY);
+    }
+
+    private transient PricingRulePath _pricingRule;
+
+    /**
+     * Get the implicit join path to the <code>public.pricing_rule</code> table.
+     */
+    public PricingRulePath pricingRule() {
+        if (_pricingRule == null)
+            _pricingRule = new PricingRulePath(this, Keys.PRICING_SESSION_LINE_ITEMS__FK_PRICING_SESSION_LINE_ITEMS_RULE, null);
+
+        return _pricingRule;
     }
 
     private transient PricingSessionsPath _pricingSessions;

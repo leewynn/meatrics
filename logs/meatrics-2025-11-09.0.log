@@ -1,0 +1,470 @@
+2025-11-09 22:39:39.788 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
+2025-11-09 22:39:39.818 [main] INFO  com.meatrics.Application - Starting Application using Java 24.0.2 with PID 11708 (D:\dev\meatrics\target\classes started by lee in D:\dev\meatrics)
+2025-11-09 22:39:39.819 [main] INFO  com.meatrics.Application - No active profile set, falling back to 1 default profile: "default"
+2025-11-09 22:39:40.861 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-11-09 22:39:40.873 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:39:40.876 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-11-09 22:39:40.876 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-09 22:39:40.940 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-11-09 22:39:40.940 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1084 ms
+2025-11-09 22:39:41.101 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing AtmosphereFramework
+2025-11-09 22:39:42.015 [main] INFO  c.v.f.s.VaadinServletContextInitializer - Search for subclasses and classes with annotations took 563 ms
+2025-11-09 22:39:42.323 [main] INFO  c.v.b.d.s.DevModeStartupListener - Starting dev-mode updaters in D:\dev\meatrics folder.
+2025-11-09 22:39:42.348 [main] INFO  c.v.f.s.f.s.FullDependenciesScanner - Visited 120 classes. Took 15 ms.
+2025-11-09 22:39:42.349 [main] INFO  c.v.f.s.f.BundleValidationUtil - Checking if a development mode bundle build is needed
+2025-11-09 22:39:42.515 [main] INFO  c.v.f.s.f.BundleValidationUtil - A development mode bundle build is not needed
+2025-11-09 22:39:42.540 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Copying frontend resources from jar files ...
+2025-11-09 22:39:42.595 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Visited 22 resources. Took 55 ms.
+2025-11-09 22:39:42.717 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-11-09 22:39:42.765 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@16750a5e
+2025-11-09 22:39:42.769 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-11-09 22:39:42.872 [main] INFO  liquibase.database - Set default schema name to public
+2025-11-09 22:39:43.081 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:39:43.119 [main] INFO  liquibase.ui - Database is up to date, no changesets to execute
+2025-11-09 22:39:43.120 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:39:43.130 [main] INFO  liquibase.util - UPDATE SUMMARY
+2025-11-09 22:39:43.130 [main] INFO  liquibase.util - Run:                          0
+2025-11-09 22:39:43.130 [main] INFO  liquibase.util - Previously run:               7
+2025-11-09 22:39:43.130 [main] INFO  liquibase.util - Filtered out:                 0
+2025-11-09 22:39:43.130 [main] INFO  liquibase.util - -------------------------------
+2025-11-09 22:39:43.130 [main] INFO  liquibase.util - Total change sets:            7
+2025-11-09 22:39:43.133 [main] INFO  liquibase.util - Update summary generated
+2025-11-09 22:39:43.134 [main] INFO  liquibase.command - Command execution complete
+2025-11-09 22:39:45.040 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:39:45.318 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-09 22:39:45.318 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-11-09 22:39:45.319 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-11-09 22:39:45.351 [http-nio-8080-exec-1] WARN  c.v.f.s.c.PushAtmosphereHandler - AtmosphereHandler.onRequest called before PushHandler has been set. This should really not happen
+2025-11-09 22:39:45.537 [http-nio-8080-exec-3] WARN  c.v.f.s.c.PushAtmosphereHandler - AtmosphereHandler.onRequest called before PushHandler has been set. This should really not happen
+2025-11-09 22:39:45.546 [http-nio-8080-exec-2] WARN  c.v.f.s.c.PushAtmosphereHandler - AtmosphereHandler.onRequest called before PushHandler has been set. This should really not happen
+2025-11-09 22:39:46.466 [main] INFO  c.v.f.s.DefaultDeploymentConfiguration - 
+Vaadin is running in DEVELOPMENT mode - do not use for production deployments.
+2025-11-09 22:39:46.478 [main] INFO  c.v.flow.spring.SpringInstantiator - The number of beans implementing 'I18NProvider' is 0. Cannot use Spring beans for I18N, falling back to the default behavior
+2025-11-09 22:39:46.506 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-11-09 22:39:46.512 [main] INFO  com.meatrics.Application - Started Application in 7.248 seconds (process running for 7.577)
+2025-11-09 22:39:46.681 [main] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.20.8 (Build date: 2025-10-01T09:21:57Z)
+                                      
+2025-11-09 22:39:46.682 [main] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: To version control jOOQ generated code or not? There are pros and cons to both approaches: https://www.jooq.org/doc/latest/manual/code-generation/codegen-version-control/
+
+2025-11-09 22:39:46.711 [main] WARN  o.j.i.D.logVersionSupport - Version mismatch         : Database version is older than what dialect POSTGRES supports: 15.13. Consider https://www.jooq.org/download/support-matrix to see what jOOQ version and edition supports which RDBMS versions.
+2025-11-09 22:39:46.731 [main] INFO  c.m.p.SystemDefaultPricingRuleInitializer - System default pricing rule already exists (id=1)
+2025-11-09 22:39:46.733 [main] INFO  c.v.b.d.DevModeHandlerManagerImpl - Application running at http://localhost:8080/
+2025-11-09 22:40:09.490 [http-nio-8080-exec-1] WARN  c.v.f.s.c.UidlRequestHandler - Invalid security key received from 127.0.0.1
+2025-11-09 22:40:19.449 [http-nio-8080-exec-3] INFO  c.m.p.ui.PricingSessionsViewNew - Applied pricing rules: 1848 successful, 0 errors
+2025-11-09 22:41:53.998 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-11-09 22:41:54.004 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-11-09 22:41:54.017 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-11-09 22:41:54.019 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-11-09 22:42:23.523 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
+2025-11-09 22:42:23.559 [main] INFO  com.meatrics.Application - Starting Application using Java 24.0.2 with PID 39764 (D:\dev\meatrics\target\classes started by lee in D:\dev\meatrics)
+2025-11-09 22:42:23.559 [main] INFO  com.meatrics.Application - No active profile set, falling back to 1 default profile: "default"
+2025-11-09 22:42:24.521 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-11-09 22:42:24.534 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:42:24.536 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-11-09 22:42:24.537 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-09 22:42:24.607 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-11-09 22:42:24.609 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1008 ms
+2025-11-09 22:42:24.814 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing AtmosphereFramework
+2025-11-09 22:42:25.725 [main] INFO  c.v.f.s.VaadinServletContextInitializer - Search for subclasses and classes with annotations took 536 ms
+2025-11-09 22:42:26.042 [main] INFO  c.v.b.d.s.DevModeStartupListener - Starting dev-mode updaters in D:\dev\meatrics folder.
+2025-11-09 22:42:26.067 [main] INFO  c.v.f.s.f.s.FullDependenciesScanner - Visited 120 classes. Took 16 ms.
+2025-11-09 22:42:26.068 [main] INFO  c.v.f.s.f.BundleValidationUtil - Checking if a development mode bundle build is needed
+2025-11-09 22:42:26.252 [main] INFO  c.v.f.s.f.BundleValidationUtil - A development mode bundle build is not needed
+2025-11-09 22:42:26.274 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Copying frontend resources from jar files ...
+2025-11-09 22:42:26.333 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Visited 22 resources. Took 58 ms.
+2025-11-09 22:42:26.435 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-11-09 22:42:26.473 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@5180f430
+2025-11-09 22:42:26.476 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-11-09 22:42:26.566 [main] INFO  liquibase.database - Set default schema name to public
+2025-11-09 22:42:26.773 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:42:26.818 [main] INFO  liquibase.ui - Database is up to date, no changesets to execute
+2025-11-09 22:42:26.821 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:42:26.827 [main] INFO  liquibase.util - UPDATE SUMMARY
+2025-11-09 22:42:26.827 [main] INFO  liquibase.util - Run:                          0
+2025-11-09 22:42:26.828 [main] INFO  liquibase.util - Previously run:               7
+2025-11-09 22:42:26.828 [main] INFO  liquibase.util - Filtered out:                 0
+2025-11-09 22:42:26.828 [main] INFO  liquibase.util - -------------------------------
+2025-11-09 22:42:26.828 [main] INFO  liquibase.util - Total change sets:            7
+2025-11-09 22:42:26.828 [main] INFO  liquibase.util - Update summary generated
+2025-11-09 22:42:26.829 [main] INFO  liquibase.command - Command execution complete
+2025-11-09 22:42:28.685 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:42:30.126 [main] INFO  c.v.f.s.DefaultDeploymentConfiguration - 
+Vaadin is running in DEVELOPMENT mode - do not use for production deployments.
+2025-11-09 22:42:30.139 [main] INFO  c.v.flow.spring.SpringInstantiator - The number of beans implementing 'I18NProvider' is 0. Cannot use Spring beans for I18N, falling back to the default behavior
+2025-11-09 22:42:30.165 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-11-09 22:42:30.171 [main] INFO  com.meatrics.Application - Started Application in 7.174 seconds (process running for 7.55)
+2025-11-09 22:42:30.330 [main] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.20.8 (Build date: 2025-10-01T09:21:57Z)
+                                      
+2025-11-09 22:42:30.330 [main] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: Should you use jOOQ's DAOs? They're convenient, but don't overuse them. SQL is often more powerful: https://blog.jooq.org/to-dao-or-not-to-dao/
+
+2025-11-09 22:42:30.359 [main] WARN  o.j.i.D.logVersionSupport - Version mismatch         : Database version is older than what dialect POSTGRES supports: 15.13. Consider https://www.jooq.org/download/support-matrix to see what jOOQ version and edition supports which RDBMS versions.
+2025-11-09 22:42:30.376 [main] INFO  c.m.p.SystemDefaultPricingRuleInitializer - System default pricing rule already exists (id=1)
+2025-11-09 22:42:30.377 [main] INFO  c.v.b.d.DevModeHandlerManagerImpl - Application running at http://localhost:8080/
+2025-11-09 22:42:30.634 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-09 22:42:30.634 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-11-09 22:42:30.634 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2025-11-09 22:42:41.253 [http-nio-8080-exec-6] INFO  c.m.p.ui.PricingSessionsViewNew - Applied pricing rules: 1848 successful, 0 errors
+2025-11-09 22:46:49.216 [http-nio-8080-exec-4] INFO  c.m.p.ui.PricingSessionsViewNew - Applied pricing rules: 1848 successful, 0 errors
+2025-11-09 22:52:25.139 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-11-09 22:52:25.145 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-11-09 22:52:25.159 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-11-09 22:52:25.160 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-11-09 22:52:27.776 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
+2025-11-09 22:52:27.805 [main] INFO  com.meatrics.Application - Starting Application using Java 24.0.2 with PID 8488 (D:\dev\meatrics\target\classes started by lee in D:\dev\meatrics)
+2025-11-09 22:52:27.806 [main] INFO  com.meatrics.Application - No active profile set, falling back to 1 default profile: "default"
+2025-11-09 22:52:28.833 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-11-09 22:52:28.844 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:52:28.846 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-11-09 22:52:28.846 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-09 22:52:28.904 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-11-09 22:52:28.904 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1065 ms
+2025-11-09 22:52:29.068 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing AtmosphereFramework
+2025-11-09 22:52:29.228 [main] ERROR o.a.c.c.C.[Tomcat].[localhost].[/] - Exception sending context initialized event to listener instance of class [com.vaadin.flow.spring.VaadinServletContextInitializer$CompositeServletContextListener]
+java.lang.RuntimeException: Unable to initialize com.vaadin.flow.spring.VaadinServletContextInitializer$VaadinAppShellContextListener
+	at com.vaadin.flow.spring.VaadinServletContextInitializer$FailFastServletContextListener.contextInitialized(VaadinServletContextInitializer.java:206)
+	at com.vaadin.flow.spring.VaadinServletContextInitializer$CompositeServletContextListener.lambda$contextInitialized$0(VaadinServletContextInitializer.java:230)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at com.vaadin.flow.spring.VaadinServletContextInitializer$CompositeServletContextListener.contextInitialized(VaadinServletContextInitializer.java:230)
+	at org.apache.catalina.core.StandardContext.listenerStart(StandardContext.java:4032)
+	at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:4462)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:164)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1201)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1191)
+	at java.base/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:328)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java)
+	at org.apache.tomcat.util.threads.InlineExecutorService.execute(InlineExecutorService.java:81)
+	at java.base/java.util.concurrent.AbstractExecutorService.submit(AbstractExecutorService.java:148)
+	at org.apache.catalina.core.ContainerBase.startInternal(ContainerBase.java:747)
+	at org.apache.catalina.core.StandardHost.startInternal(StandardHost.java:770)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:164)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1201)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1191)
+	at java.base/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:328)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java)
+	at org.apache.tomcat.util.threads.InlineExecutorService.execute(InlineExecutorService.java:81)
+	at java.base/java.util.concurrent.AbstractExecutorService.submit(AbstractExecutorService.java:148)
+	at org.apache.catalina.core.ContainerBase.startInternal(ContainerBase.java:747)
+	at org.apache.catalina.core.StandardEngine.startInternal(StandardEngine.java:201)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:164)
+	at org.apache.catalina.core.StandardService.startInternal(StandardService.java:410)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:164)
+	at org.apache.catalina.core.StandardServer.startInternal(StandardServer.java:868)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:164)
+	at org.apache.catalina.startup.Tomcat.start(Tomcat.java:436)
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.initialize(TomcatWebServer.java:128)
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.<init>(TomcatWebServer.java:107)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getTomcatWebServer(TomcatServletWebServerFactory.java:517)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getWebServer(TomcatServletWebServerFactory.java:219)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.createWebServer(ServletWebServerApplicationContext.java:193)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:167)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:621)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
+	at com.meatrics.Application.main(Application.java:16)
+Caused by: java.lang.IllegalStateException: Running project in development mode with no access to folder '/mnt/d/dev/meatrics'.
+Build project in production mode instead, see https://vaadin.com/docs/latest/flow/production/overview
+	at com.vaadin.flow.server.startup.AbstractConfigurationFactory.verifyFolderExists(AbstractConfigurationFactory.java:298)
+	at com.vaadin.flow.server.startup.AbstractConfigurationFactory.getConfigParametersUsingTokenData(AbstractConfigurationFactory.java:112)
+	at com.vaadin.flow.server.startup.DefaultApplicationConfigurationFactory.create(DefaultApplicationConfigurationFactory.java:111)
+	at com.vaadin.flow.server.startup.ApplicationConfiguration.lambda$get$0(ApplicationConfiguration.java:64)
+	at com.vaadin.flow.server.VaadinServletContext.getAttribute(VaadinServletContext.java:73)
+	at com.vaadin.flow.server.startup.ApplicationConfiguration.get(ApplicationConfiguration.java:47)
+	at com.vaadin.flow.spring.VaadinServletContextInitializer$VaadinAppShellContextListener.failFastContextInitialized(VaadinServletContextInitializer.java:674)
+	at com.vaadin.flow.spring.VaadinServletContextInitializer$FailFastServletContextListener.contextInitialized(VaadinServletContextInitializer.java:202)
+	... 43 common frames omitted
+2025-11-09 22:52:29.232 [main] ERROR o.a.catalina.core.StandardContext - One or more listeners failed to start. Full details will be found in the appropriate container log file
+2025-11-09 22:52:29.232 [main] ERROR o.a.catalina.core.StandardContext - Context [] startup failed due to previous errors
+2025-11-09 22:52:29.239 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:52:29.262 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Pausing ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:52:29.262 [main] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2025-11-09 22:52:29.263 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Stopping ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:52:29.265 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Destroying ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:52:29.266 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Unable to start web server
+2025-11-09 22:52:29.274 [main] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-11-09 22:52:29.288 [main] ERROR o.s.boot.SpringApplication - Application run failed
+org.springframework.context.ApplicationContextException: Unable to start web server
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:170)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:621)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
+	at com.meatrics.Application.main(Application.java:16)
+Caused by: org.springframework.boot.web.server.WebServerException: Unable to start embedded Tomcat
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.initialize(TomcatWebServer.java:147)
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.<init>(TomcatWebServer.java:107)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getTomcatWebServer(TomcatServletWebServerFactory.java:517)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getWebServer(TomcatServletWebServerFactory.java:219)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.createWebServer(ServletWebServerApplicationContext.java:193)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:167)
+	... 8 common frames omitted
+Caused by: java.lang.IllegalStateException: StandardEngine[Tomcat].StandardHost[localhost].TomcatEmbeddedContext[] failed to start
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.rethrowDeferredStartupExceptions(TomcatWebServer.java:209)
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.initialize(TomcatWebServer.java:131)
+	... 13 common frames omitted
+2025-11-09 22:54:20.467 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
+2025-11-09 22:54:20.497 [main] INFO  com.meatrics.Application - Starting Application using Java 24.0.2 with PID 17988 (D:\dev\meatrics\target\classes started by lee in D:\dev\meatrics)
+2025-11-09 22:54:20.498 [main] INFO  com.meatrics.Application - No active profile set, falling back to 1 default profile: "default"
+2025-11-09 22:54:21.865 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-11-09 22:54:21.879 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:54:21.883 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-11-09 22:54:21.883 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-09 22:54:21.978 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-11-09 22:54:21.978 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1438 ms
+2025-11-09 22:54:22.198 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing AtmosphereFramework
+2025-11-09 22:54:23.349 [main] INFO  c.v.f.s.VaadinServletContextInitializer - Search for subclasses and classes with annotations took 686 ms
+2025-11-09 22:54:23.706 [main] INFO  c.v.b.d.s.DevModeStartupListener - Starting dev-mode updaters in D:\dev\meatrics folder.
+2025-11-09 22:54:23.741 [main] INFO  c.v.f.s.f.s.FullDependenciesScanner - Visited 120 classes. Took 23 ms.
+2025-11-09 22:54:23.743 [main] INFO  c.v.f.s.f.BundleValidationUtil - Checking if a development mode bundle build is needed
+2025-11-09 22:54:23.984 [main] INFO  c.v.f.s.f.BundleValidationUtil - A development mode bundle build is not needed
+2025-11-09 22:54:24.019 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Copying frontend resources from jar files ...
+2025-11-09 22:54:24.091 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Visited 22 resources. Took 71 ms.
+2025-11-09 22:54:24.235 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-11-09 22:54:24.282 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@17596317
+2025-11-09 22:54:24.283 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-11-09 22:54:24.370 [main] INFO  liquibase.database - Set default schema name to public
+2025-11-09 22:54:24.670 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:54:24.723 [main] INFO  liquibase.ui - Database is up to date, no changesets to execute
+2025-11-09 22:54:24.724 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:54:24.729 [main] INFO  liquibase.util - UPDATE SUMMARY
+2025-11-09 22:54:24.729 [main] INFO  liquibase.util - Run:                          0
+2025-11-09 22:54:24.729 [main] INFO  liquibase.util - Previously run:               7
+2025-11-09 22:54:24.729 [main] INFO  liquibase.util - Filtered out:                 0
+2025-11-09 22:54:24.729 [main] INFO  liquibase.util - -------------------------------
+2025-11-09 22:54:24.729 [main] INFO  liquibase.util - Total change sets:            7
+2025-11-09 22:54:24.729 [main] INFO  liquibase.util - Update summary generated
+2025-11-09 22:54:24.730 [main] INFO  liquibase.command - Command execution complete
+2025-11-09 22:54:26.667 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:54:28.107 [main] INFO  c.v.f.s.DefaultDeploymentConfiguration - 
+Vaadin is running in DEVELOPMENT mode - do not use for production deployments.
+2025-11-09 22:54:28.117 [main] INFO  c.v.flow.spring.SpringInstantiator - The number of beans implementing 'I18NProvider' is 0. Cannot use Spring beans for I18N, falling back to the default behavior
+2025-11-09 22:54:28.145 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-11-09 22:54:28.149 [main] INFO  com.meatrics.Application - Started Application in 8.266 seconds (process running for 8.655)
+2025-11-09 22:54:28.308 [main] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.20.8 (Build date: 2025-10-01T09:21:57Z)
+                                      
+2025-11-09 22:54:28.309 [main] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: Move logic to your data, not data to your logic, by running procedural code as a stored function: https://www.jooq.org/doc/latest/manual/sql-building/ddl-statements/create-statement/create-function-statement/
+
+2025-11-09 22:54:28.335 [main] WARN  o.j.i.D.logVersionSupport - Version mismatch         : Database version is older than what dialect POSTGRES supports: 15.13. Consider https://www.jooq.org/download/support-matrix to see what jOOQ version and edition supports which RDBMS versions.
+2025-11-09 22:54:28.351 [main] INFO  c.m.p.SystemDefaultPricingRuleInitializer - System default pricing rule already exists (id=1)
+2025-11-09 22:54:28.353 [main] INFO  c.v.b.d.DevModeHandlerManagerImpl - Application running at http://localhost:8080/
+2025-11-09 22:54:28.652 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-09 22:54:28.652 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-11-09 22:54:28.653 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-11-09 22:54:35.810 [http-nio-8080-exec-10] INFO  c.m.p.ui.PricingSessionsViewNew - Applied pricing rules: 1848 successful, 0 errors
+2025-11-09 22:57:55.914 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-11-09 22:57:55.919 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-11-09 22:57:55.933 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-11-09 22:57:55.934 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-11-09 22:57:58.310 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
+2025-11-09 22:57:58.336 [main] INFO  com.meatrics.Application - Starting Application using Java 24.0.2 with PID 13452 (D:\dev\meatrics\target\classes started by lee in D:\dev\meatrics)
+2025-11-09 22:57:58.336 [main] INFO  com.meatrics.Application - No active profile set, falling back to 1 default profile: "default"
+2025-11-09 22:57:59.280 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-11-09 22:57:59.288 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:57:59.290 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-11-09 22:57:59.291 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-09 22:57:59.347 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-11-09 22:57:59.347 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 975 ms
+2025-11-09 22:57:59.505 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing AtmosphereFramework
+2025-11-09 22:58:00.316 [main] INFO  c.v.f.s.VaadinServletContextInitializer - Search for subclasses and classes with annotations took 488 ms
+2025-11-09 22:58:00.614 [main] INFO  c.v.b.d.s.DevModeStartupListener - Starting dev-mode updaters in D:\dev\meatrics folder.
+2025-11-09 22:58:00.638 [main] INFO  c.v.f.s.f.s.FullDependenciesScanner - Visited 120 classes. Took 15 ms.
+2025-11-09 22:58:00.639 [main] INFO  c.v.f.s.f.BundleValidationUtil - Checking if a development mode bundle build is needed
+2025-11-09 22:58:00.803 [main] INFO  c.v.f.s.f.BundleValidationUtil - A development mode bundle build is not needed
+2025-11-09 22:58:00.824 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Copying frontend resources from jar files ...
+2025-11-09 22:58:00.879 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Visited 22 resources. Took 54 ms.
+2025-11-09 22:58:00.988 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-11-09 22:58:01.027 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@58f27c37
+2025-11-09 22:58:01.028 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-11-09 22:58:01.105 [main] INFO  liquibase.database - Set default schema name to public
+2025-11-09 22:58:01.316 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:58:01.363 [main] INFO  liquibase.ui - Database is up to date, no changesets to execute
+2025-11-09 22:58:01.363 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:58:01.369 [main] INFO  liquibase.util - UPDATE SUMMARY
+2025-11-09 22:58:01.369 [main] INFO  liquibase.util - Run:                          0
+2025-11-09 22:58:01.369 [main] INFO  liquibase.util - Previously run:               7
+2025-11-09 22:58:01.369 [main] INFO  liquibase.util - Filtered out:                 0
+2025-11-09 22:58:01.369 [main] INFO  liquibase.util - -------------------------------
+2025-11-09 22:58:01.369 [main] INFO  liquibase.util - Total change sets:            7
+2025-11-09 22:58:01.370 [main] INFO  liquibase.util - Update summary generated
+2025-11-09 22:58:01.370 [main] INFO  liquibase.command - Command execution complete
+2025-11-09 22:58:03.210 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:58:03.281 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-09 22:58:03.281 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-11-09 22:58:03.281 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2025-11-09 22:58:03.307 [http-nio-8080-exec-1] WARN  c.v.f.s.c.PushAtmosphereHandler - AtmosphereHandler.onRequest called before PushHandler has been set. This should really not happen
+2025-11-09 22:58:03.485 [http-nio-8080-exec-6] WARN  c.v.f.s.c.PushAtmosphereHandler - AtmosphereHandler.onRequest called before PushHandler has been set. This should really not happen
+2025-11-09 22:58:04.630 [main] INFO  c.v.f.s.DefaultDeploymentConfiguration - 
+Vaadin is running in DEVELOPMENT mode - do not use for production deployments.
+2025-11-09 22:58:04.642 [main] INFO  c.v.flow.spring.SpringInstantiator - The number of beans implementing 'I18NProvider' is 0. Cannot use Spring beans for I18N, falling back to the default behavior
+2025-11-09 22:58:04.667 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-11-09 22:58:04.670 [main] INFO  com.meatrics.Application - Started Application in 6.83 seconds (process running for 7.135)
+2025-11-09 22:58:04.822 [main] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.20.8 (Build date: 2025-10-01T09:21:57Z)
+                                      
+2025-11-09 22:58:04.823 [main] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: Want to learn more about SQL? Check out our many blog posts: https://blog.jooq.org/sql
+
+2025-11-09 22:58:04.851 [main] WARN  o.j.i.D.logVersionSupport - Version mismatch         : Database version is older than what dialect POSTGRES supports: 15.13. Consider https://www.jooq.org/download/support-matrix to see what jOOQ version and edition supports which RDBMS versions.
+2025-11-09 22:58:04.870 [main] INFO  c.m.p.SystemDefaultPricingRuleInitializer - System default pricing rule already exists (id=1)
+2025-11-09 22:58:04.872 [main] INFO  c.v.b.d.DevModeHandlerManagerImpl - Application running at http://localhost:8080/
+2025-11-09 22:59:34.390 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-11-09 22:59:34.396 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-11-09 22:59:34.408 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-11-09 22:59:34.409 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-11-09 22:59:36.013 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
+2025-11-09 22:59:36.039 [main] INFO  com.meatrics.Application - Starting Application using Java 24.0.2 with PID 39632 (D:\dev\meatrics\target\classes started by lee in D:\dev\meatrics)
+2025-11-09 22:59:36.039 [main] INFO  com.meatrics.Application - No active profile set, falling back to 1 default profile: "default"
+2025-11-09 22:59:36.967 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-11-09 22:59:36.976 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:59:36.978 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-11-09 22:59:36.978 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-09 22:59:37.033 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-11-09 22:59:37.034 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 957 ms
+2025-11-09 22:59:37.171 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing AtmosphereFramework
+2025-11-09 22:59:37.943 [main] INFO  c.v.f.s.VaadinServletContextInitializer - Search for subclasses and classes with annotations took 464 ms
+2025-11-09 22:59:38.249 [main] INFO  c.v.b.d.s.DevModeStartupListener - Starting dev-mode updaters in D:\dev\meatrics folder.
+2025-11-09 22:59:38.272 [main] INFO  c.v.f.s.f.s.FullDependenciesScanner - Visited 120 classes. Took 14 ms.
+2025-11-09 22:59:38.273 [main] INFO  c.v.f.s.f.BundleValidationUtil - Checking if a development mode bundle build is needed
+2025-11-09 22:59:38.450 [main] INFO  c.v.f.s.f.BundleValidationUtil - A development mode bundle build is not needed
+2025-11-09 22:59:38.480 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Copying frontend resources from jar files ...
+2025-11-09 22:59:38.539 [vaadin-dev-server-1] INFO  c.v.f.s.f.TaskCopyFrontendFiles - Visited 22 resources. Took 58 ms.
+2025-11-09 22:59:38.666 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-11-09 22:59:38.711 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@d4962bd
+2025-11-09 22:59:38.712 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-11-09 22:59:38.786 [main] INFO  liquibase.database - Set default schema name to public
+2025-11-09 22:59:39.019 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:59:39.059 [main] INFO  liquibase.ui - Database is up to date, no changesets to execute
+2025-11-09 22:59:39.061 [main] INFO  liquibase.changelog - Reading from public.databasechangelog
+2025-11-09 22:59:39.071 [main] INFO  liquibase.util - UPDATE SUMMARY
+2025-11-09 22:59:39.071 [main] INFO  liquibase.util - Run:                          0
+2025-11-09 22:59:39.072 [main] INFO  liquibase.util - Previously run:               7
+2025-11-09 22:59:39.072 [main] INFO  liquibase.util - Filtered out:                 0
+2025-11-09 22:59:39.072 [main] INFO  liquibase.util - -------------------------------
+2025-11-09 22:59:39.072 [main] INFO  liquibase.util - Total change sets:            7
+2025-11-09 22:59:39.072 [main] INFO  liquibase.util - Update summary generated
+2025-11-09 22:59:39.073 [main] INFO  liquibase.command - Command execution complete
+2025-11-09 22:59:40.870 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-11-09 22:59:40.960 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-09 22:59:40.960 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-11-09 22:59:40.961 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2025-11-09 22:59:40.986 [http-nio-8080-exec-2] INFO  c.v.f.s.DefaultDeploymentConfiguration - 
+Vaadin is running in DEVELOPMENT mode - do not use for production deployments.
+2025-11-09 22:59:40.998 [http-nio-8080-exec-1] WARN  c.v.f.s.c.PushAtmosphereHandler - AtmosphereHandler.onRequest called before PushHandler has been set. This should really not happen
+2025-11-09 22:59:41.001 [http-nio-8080-exec-2] INFO  c.v.flow.spring.SpringInstantiator - The number of beans implementing 'I18NProvider' is 0. Cannot use Spring beans for I18N, falling back to the default behavior
+2025-11-09 22:59:42.459 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-11-09 22:59:42.465 [main] INFO  com.meatrics.Application - Started Application in 6.93 seconds (process running for 7.236)
+2025-11-09 22:59:42.638 [main] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.20.8 (Build date: 2025-10-01T09:21:57Z)
+                                      
+2025-11-09 22:59:42.638 [main] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: You can nest collections directly in SQL using jOOQ's SQL/XML or SQL/JSON support: https://blog.jooq.org/nesting-collections-with-jooq-3-14s-sql-xml-or-sql-json-support/
+
+2025-11-09 22:59:42.668 [main] WARN  o.j.i.D.logVersionSupport - Version mismatch         : Database version is older than what dialect POSTGRES supports: 15.13. Consider https://www.jooq.org/download/support-matrix to see what jOOQ version and edition supports which RDBMS versions.
+2025-11-09 22:59:42.687 [main] INFO  c.m.p.SystemDefaultPricingRuleInitializer - System default pricing rule already exists (id=1)
+2025-11-09 22:59:42.690 [main] INFO  c.v.b.d.DevModeHandlerManagerImpl - Application running at http://localhost:8080/
+2025-11-09 22:59:43.977 [http-nio-8080-exec-10] WARN  c.v.f.s.c.UidlRequestHandler - Invalid security key received from 0:0:0:0:0:0:0:1
+2025-11-09 22:59:52.743 [http-nio-8080-exec-9] INFO  c.m.p.ui.PricingSessionsViewNew - Applied pricing rules: 1848 successful, 0 errors

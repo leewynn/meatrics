@@ -10,12 +10,31 @@
       "Bash(java -version:*)",
       "Bash(chmod:*)",
       "WebFetch(domain:www.jooq.org)",
-      "Bash(mvn clean compile:*)",
-      "Bash(mvn compile:*)",
       "Bash(gemini:*)",
-      "WebFetch(domain:dev.to)"
+      "WebFetch(domain:dev.to)",
+      "Bash(find:*)",
+      "Task(subagent_type:vaadin-jooq-spring-expert)",
+      "Task(subagent_type:documentation-agent)",
+      "Task(subagent_type:Explore)",
+      "Task(subagent_type:Plan)",
+      "Task(subagent_type:general-purpose)"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(mvn:*)"
+    ],
     "ask": []
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$ARGUMENTS\" | grep -q '\"command\":.*\"mvn'; then echo 'ERROR: Maven commands are disabled. User will compile manually.' >&2; exit 1; fi"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -20,6 +20,12 @@ public class PricingSessionLineItem {
     private BigDecimal totalCost;
     private Boolean amountModified;
 
+    // Historical pricing data fields (needed for MAINTAIN_GP_PERCENT rule)
+    private BigDecimal lastCost;          // Historical average unit cost
+    private BigDecimal lastUnitSellPrice; // Historical average unit sell price
+    private BigDecimal incomingCost;      // New incoming cost from product_costs
+    private String primaryGroup;          // Product category for rule matching
+
     public PricingSessionLineItem() {
     }
 
@@ -118,5 +124,37 @@ public class PricingSessionLineItem {
 
     public void setAmountModified(Boolean amountModified) {
         this.amountModified = amountModified;
+    }
+
+    public BigDecimal getLastCost() {
+        return lastCost;
+    }
+
+    public void setLastCost(BigDecimal lastCost) {
+        this.lastCost = lastCost;
+    }
+
+    public BigDecimal getLastUnitSellPrice() {
+        return lastUnitSellPrice;
+    }
+
+    public void setLastUnitSellPrice(BigDecimal lastUnitSellPrice) {
+        this.lastUnitSellPrice = lastUnitSellPrice;
+    }
+
+    public BigDecimal getIncomingCost() {
+        return incomingCost;
+    }
+
+    public void setIncomingCost(BigDecimal incomingCost) {
+        this.incomingCost = incomingCost;
+    }
+
+    public String getPrimaryGroup() {
+        return primaryGroup;
+    }
+
+    public void setPrimaryGroup(String primaryGroup) {
+        this.primaryGroup = primaryGroup;
     }
 }

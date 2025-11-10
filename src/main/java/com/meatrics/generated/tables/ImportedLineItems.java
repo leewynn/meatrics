@@ -235,6 +235,11 @@ public class ImportedLineItems extends TableImpl<ImportedLineItemsRecord> {
     }
 
     @Override
+    public List<UniqueKey<ImportedLineItemsRecord>> getUniqueKeys() {
+        return Arrays.asList(Keys.UK_IMPORTED_LINE_ITEMS_NO_DUPLICATES);
+    }
+
+    @Override
     public List<ForeignKey<ImportedLineItemsRecord, ?>> getReferences() {
         return Arrays.asList(Keys.IMPORTED_LINE_ITEMS__IMPORTED_LINE_ITEMS_IMPORT_ID_FKEY);
     }

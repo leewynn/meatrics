@@ -113,6 +113,30 @@ public class ProductCostRepository {
             PRODUCT_COSTS.STANDARD_COST.isNotNull().and(PRODUCT_COSTS.STANDARD_COST.gt(java.math.BigDecimal.ZERO)));
     }
 
+    /**
+     * Get distinct product categories (primary_group values)
+     * Used for populating category dropdown in pricing rules
+     */
+    public List<String> findDistinctPrimaryGroups() {
+        return dsl.selectDistinct(PRODUCT_COSTS.PRIMARY_GROUP)
+                .from(PRODUCT_COSTS)
+                .where(PRODUCT_COSTS.PRIMARY_GROUP.isNotNull())
+                .orderBy(PRODUCT_COSTS.PRIMARY_GROUP.asc())
+                .fetch(PRODUCT_COSTS.PRIMARY_GROUP);
+    }
+
+    /**
+     * Get distinct product codes
+     * Used for populating product code dropdown in pricing rules
+     */
+    public List<String> findDistinctProductCodes() {
+        return dsl.selectDistinct(PRODUCT_COSTS.PRODUCT_CODE)
+                .from(PRODUCT_COSTS)
+                .where(PRODUCT_COSTS.PRODUCT_CODE.isNotNull())
+                .orderBy(PRODUCT_COSTS.PRODUCT_CODE.asc())
+                .fetch(PRODUCT_COSTS.PRODUCT_CODE);
+    }
+
     private ProductCost mapToProductCost(org.jooq.Record record) {
         ProductCost pc = new ProductCost();
         pc.setProductCostId(record.get(PRODUCT_COSTS.PRODUCT_COST_ID));

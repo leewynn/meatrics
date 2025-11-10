@@ -45,7 +45,13 @@ CREATE TABLE imported_line_items (
     -- Metadata
     import_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (import_id) REFERENCES import_summary(import_id) ON DELETE CASCADE
+    FOREIGN KEY (import_id) REFERENCES import_summary(import_id) ON DELETE CASCADE,
+
+    -- Unique constraint to prevent duplicate imports
+    -- A duplicate is defined as a line item with the same:
+    -- customer_code, invoice_number, product_code, transaction_date, quantity, and amount
+    CONSTRAINT uk_imported_line_items_no_duplicates
+        UNIQUE (customer_code, invoice_number, product_code, transaction_date, quantity, amount)
 );
 
 CREATE INDEX idx_imported_line_items_import_id ON imported_line_items(import_id);

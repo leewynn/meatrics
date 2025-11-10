@@ -1,0 +1,6 @@
+/* Vaadin Grid component styles */
+
+/* New Pricing columns - slightly lighter background using Lumo theme variable */
+[part~="cell"].new-pricing {
+    background-color: var(--lumo-contrast-10pct);
+}

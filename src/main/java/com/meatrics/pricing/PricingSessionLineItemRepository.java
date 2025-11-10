@@ -39,27 +39,23 @@ public class PricingSessionLineItemRepository {
 
     /**
      * Save all line items for a session (batch insert)
+     * NOTE: After running migration 014, you must regenerate jOOQ code for the new columns
      */
     public void saveAll(Long sessionId, List<PricingSessionLineItem> items) {
         if (items == null || items.isEmpty()) {
             return;
         }
 
-        var insertQuery = dsl.insertInto(PRICING_SESSION_LINE_ITEMS,
-                PRICING_SESSION_LINE_ITEMS.SESSION_ID,
-                PRICING_SESSION_LINE_ITEMS.CUSTOMER_CODE,
-                PRICING_SESSION_LINE_ITEMS.CUSTOMER_NAME,
-                PRICING_SESSION_LINE_ITEMS.CUSTOMER_RATING,
-                PRICING_SESSION_LINE_ITEMS.PRODUCT_CODE,
-                PRICING_SESSION_LINE_ITEMS.PRODUCT_DESCRIPTION,
-                PRICING_SESSION_LINE_ITEMS.TOTAL_QUANTITY,
-                PRICING_SESSION_LINE_ITEMS.TOTAL_AMOUNT,
-                PRICING_SESSION_LINE_ITEMS.ORIGINAL_AMOUNT,
-                PRICING_SESSION_LINE_ITEMS.TOTAL_COST,
-                PRICING_SESSION_LINE_ITEMS.AMOUNT_MODIFIED);
+        // Using raw SQL until jOOQ code is regenerated after migration 014
+        String sql = "INSERT INTO pricing_session_line_items " +
+                "(session_id, customer_code, customer_name, customer_rating, product_code, " +
+                "product_description, total_quantity, total_amount, original_amount, total_cost, " +
+                "amount_modified, last_cost, last_unit_sell_price, incoming_cost, primary_group) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        for (PricingSessionLineItem item : items) {
-            insertQuery = insertQuery.values(
+        dsl.batch(
+            items.stream()
+                .map(item -> dsl.query(sql,
                     sessionId,
                     item.getCustomerCode(),
                     item.getCustomerName(),
@@ -70,11 +66,14 @@ public class PricingSessionLineItemRepository {
                     item.getTotalAmount(),
                     item.getOriginalAmount(),
                     item.getTotalCost(),
-                    item.getAmountModified() != null ? item.getAmountModified() : false
-            );
-        }
-
-        insertQuery.execute();
+                    item.getAmountModified() != null ? item.getAmountModified() : false,
+                    item.getLastCost(),
+                    item.getLastUnitSellPrice(),
+                    item.getIncomingCost(),
+                    item.getPrimaryGroup()
+                ))
+                .toArray(org.jooq.Query[]::new)
+        ).execute();
     }
 
     private PricingSessionLineItem mapToPricingSessionLineItem(org.jooq.Record record) {
@@ -91,6 +90,19 @@ public class PricingSessionLineItemRepository {
         item.setOriginalAmount(record.get(PRICING_SESSION_LINE_ITEMS.ORIGINAL_AMOUNT));
         item.setTotalCost(record.get(PRICING_SESSION_LINE_ITEMS.TOTAL_COST));
         item.setAmountModified(record.get(PRICING_SESSION_LINE_ITEMS.AMOUNT_MODIFIED));
+
+        // Historical pricing fields (after migration 014 and jOOQ regeneration)
+        // Using field name strings until jOOQ code is regenerated
+        try {
+            item.setLastCost(record.get("last_cost", java.math.BigDecimal.class));
+            item.setLastUnitSellPrice(record.get("last_unit_sell_price", java.math.BigDecimal.class));
+            item.setIncomingCost(record.get("incoming_cost", java.math.BigDecimal.class));
+            item.setPrimaryGroup(record.get("primary_group", String.class));
+        } catch (Exception e) {
+            // Columns don't exist yet - migration 014 hasn't run
+            // This is fine, fields will remain null
+        }
+
         return item;
     }
 }

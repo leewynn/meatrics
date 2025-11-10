@@ -4,6 +4,7 @@ import com.meatrics.generated.tables.records.VGroupedLineItemsRecord;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 /**
  * Grouped line item representing aggregated sales data for a customer-product combination
@@ -17,17 +18,38 @@ public class GroupedLineItem {
     private String productCode;
     private String productDescription;
 
-    // Customer rating (populated from session when loading saved session)
+    // Product category for rule matching
+    private String primaryGroup;
+
+    // Customer rating for context
     private String customerRating;
 
-    // Aggregated values
+    // Aggregated values (original/existing)
     private BigDecimal totalQuantity;
     private BigDecimal totalAmount;
     private BigDecimal totalCost;
 
-    // Transient fields for UI state (modifications)
+    // Historical data (from v_grouped_line_items)
+    private BigDecimal lastCost;          // Historical cost when sold
+    private BigDecimal lastUnitSellPrice; // Historical sell price
+    private BigDecimal lastAmount;        // Historical total amount
+    private BigDecimal lastGrossProfit;   // Historical gross profit
+
+    // New pricing data
+    private BigDecimal incomingCost;      // From product_costs.stdcost
+    private BigDecimal newUnitSellPrice;  // Calculated by rules or manual
+    private BigDecimal newAmount;         // Calculated: newUnitSellPrice × qty
+    private BigDecimal newGrossProfit;    // Calculated: newAmount - (incomingCost × qty)
+
+    // Transient fields for UI state (modifications and rule tracking)
     private transient boolean amountModified = false;
     private transient BigDecimal originalAmount = null;
+    private transient PricingRule appliedRule;  // Which rule was used (backward compatibility - primary/first rule)
+    private transient boolean manualOverride;   // User edited price flag
+
+    // Phase 2 additions: Multi-rule support
+    private transient List<PricingRule> appliedRules;          // Multiple rules can be applied
+    private transient List<BigDecimal> intermediateResults;    // Prices after each rule
 
     public GroupedLineItem() {
     }
@@ -184,5 +206,153 @@ public class GroupedLineItem {
     // Helper method for grouping key
     public String getGroupingKey() {
         return customerCode + "|" + productCode;
+    }
+
+    // Getters and setters for new fields
+
+    public String getPrimaryGroup() {
+        return primaryGroup;
+    }
+
+    public void setPrimaryGroup(String primaryGroup) {
+        this.primaryGroup = primaryGroup;
+    }
+
+    public BigDecimal getLastCost() {
+        return lastCost;
+    }
+
+    public void setLastCost(BigDecimal lastCost) {
+        this.lastCost = lastCost;
+    }
+
+    public BigDecimal getLastUnitSellPrice() {
+        return lastUnitSellPrice;
+    }
+
+    public void setLastUnitSellPrice(BigDecimal lastUnitSellPrice) {
+        this.lastUnitSellPrice = lastUnitSellPrice;
+    }
+
+    public BigDecimal getLastAmount() {
+        return lastAmount;
+    }
+
+    public void setLastAmount(BigDecimal lastAmount) {
+        this.lastAmount = lastAmount;
+    }
+
+    public BigDecimal getLastGrossProfit() {
+        return lastGrossProfit;
+    }
+
+    public void setLastGrossProfit(BigDecimal lastGrossProfit) {
+        this.lastGrossProfit = lastGrossProfit;
+    }
+
+    public BigDecimal getIncomingCost() {
+        return incomingCost;
+    }
+
+    public void setIncomingCost(BigDecimal incomingCost) {
+        this.incomingCost = incomingCost;
+    }
+
+    public BigDecimal getNewUnitSellPrice() {
+        return newUnitSellPrice;
+    }
+
+    public void setNewUnitSellPrice(BigDecimal newUnitSellPrice) {
+        this.newUnitSellPrice = newUnitSellPrice;
+    }
+
+    public BigDecimal getNewAmount() {
+        return newAmount;
+    }
+
+    public void setNewAmount(BigDecimal newAmount) {
+        this.newAmount = newAmount;
+    }
+
+    public BigDecimal getNewGrossProfit() {
+        return newGrossProfit;
+    }
+
+    public void setNewGrossProfit(BigDecimal newGrossProfit) {
+        this.newGrossProfit = newGrossProfit;
+    }
+
+    /**
+     * Get the primary (first) applied rule for backward compatibility.
+     * If multiple rules are set, returns the first one.
+     * Otherwise, returns the single appliedRule field.
+     *
+     * @return The primary pricing rule, or null if no rules were applied
+     */
+    public PricingRule getAppliedRule() {
+        List<PricingRule> rules = getAppliedRules();
+        return rules.isEmpty() ? appliedRule : rules.get(0);
+    }
+
+    /**
+     * Set a single applied rule (backward compatible).
+     * This sets both the legacy appliedRule field and the new appliedRules list.
+     *
+     * @param appliedRule The pricing rule to set
+     */
+    public void setAppliedRule(PricingRule appliedRule) {
+        this.appliedRule = appliedRule;
+        this.appliedRules = appliedRule != null ? List.of(appliedRule) : List.of();
+    }
+
+    public boolean isManualOverride() {
+        return manualOverride;
+    }
+
+    public void setManualOverride(boolean manualOverride) {
+        this.manualOverride = manualOverride;
+    }
+
+    // Phase 2: Multi-rule support getters and setters
+
+    /**
+     * Get all applied pricing rules in the order they were applied.
+     *
+     * @return List of applied rules (never null, may be empty)
+     */
+    public List<PricingRule> getAppliedRules() {
+        return appliedRules != null ? appliedRules : List.of();
+    }
+
+    /**
+     * Set multiple applied pricing rules.
+     * Also updates the legacy appliedRule field to the first rule for backward compatibility.
+     *
+     * @param appliedRules List of pricing rules to set
+     */
+    public void setAppliedRules(List<PricingRule> appliedRules) {
+        this.appliedRules = appliedRules;
+        // Update legacy field for backward compatibility
+        if (appliedRules != null && !appliedRules.isEmpty()) {
+            this.appliedRule = appliedRules.get(0);
+        }
+    }
+
+    /**
+     * Get intermediate calculation results showing price after each rule.
+     *
+     * @return List of intermediate prices (never null, may be empty)
+     */
+    public List<BigDecimal> getIntermediateResults() {
+        return intermediateResults != null ? intermediateResults : List.of();
+    }
+
+    /**
+     * Set intermediate calculation results.
+     *
+     * @param intermediateResults List of prices after each rule application
+     */
+    public void setIntermediateResults(List<BigDecimal> intermediateResults) {
+        this.intermediateResults = intermediateResults;
     }
 }

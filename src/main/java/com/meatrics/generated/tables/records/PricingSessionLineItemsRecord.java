@@ -127,17 +127,33 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
     }
 
     /**
+     * Setter for <code>public.pricing_session_line_items.primary_group</code>.
+     * Product category/primary group for rule matching
+     */
+    public void setPrimaryGroup(String value) {
+        set(7, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_session_line_items.primary_group</code>.
+     * Product category/primary group for rule matching
+     */
+    public String getPrimaryGroup() {
+        return (String) get(7);
+    }
+
+    /**
      * Setter for <code>public.pricing_session_line_items.total_quantity</code>.
      */
     public void setTotalQuantity(BigDecimal value) {
-        set(7, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>public.pricing_session_line_items.total_quantity</code>.
      */
     public BigDecimal getTotalQuantity() {
-        return (BigDecimal) get(7);
+        return (BigDecimal) get(8);
     }
 
     /**
@@ -145,7 +161,7 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
      * Current amount (may be modified from original)
      */
     public void setTotalAmount(BigDecimal value) {
-        set(8, value);
+        set(9, value);
     }
 
     /**
@@ -153,7 +169,7 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
      * Current amount (may be modified from original)
      */
     public BigDecimal getTotalAmount() {
-        return (BigDecimal) get(8);
+        return (BigDecimal) get(9);
     }
 
     /**
@@ -162,7 +178,7 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
      * amount before any modifications (for tracking changes)
      */
     public void setOriginalAmount(BigDecimal value) {
-        set(9, value);
+        set(10, value);
     }
 
     /**
@@ -171,21 +187,21 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
      * amount before any modifications (for tracking changes)
      */
     public BigDecimal getOriginalAmount() {
-        return (BigDecimal) get(9);
+        return (BigDecimal) get(10);
     }
 
     /**
      * Setter for <code>public.pricing_session_line_items.total_cost</code>.
      */
     public void setTotalCost(BigDecimal value) {
-        set(10, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>public.pricing_session_line_items.total_cost</code>.
      */
     public BigDecimal getTotalCost() {
-        return (BigDecimal) get(10);
+        return (BigDecimal) get(11);
     }
 
     /**
@@ -194,7 +210,7 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
      * indicating whether the amount was modified from the original
      */
     public void setAmountModified(Boolean value) {
-        set(11, value);
+        set(12, value);
     }
 
     /**
@@ -203,7 +219,185 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
      * indicating whether the amount was modified from the original
      */
     public Boolean getAmountModified() {
-        return (Boolean) get(11);
+        return (Boolean) get(12);
+    }
+
+    /**
+     * Setter for <code>public.pricing_session_line_items.last_cost</code>.
+     * Historical average unit cost from imported data (used for GP%
+     * calculation)
+     */
+    public void setLastCost(BigDecimal value) {
+        set(13, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_session_line_items.last_cost</code>.
+     * Historical average unit cost from imported data (used for GP%
+     * calculation)
+     */
+    public BigDecimal getLastCost() {
+        return (BigDecimal) get(13);
+    }
+
+    /**
+     * Setter for
+     * <code>public.pricing_session_line_items.last_unit_sell_price</code>.
+     * Historical average unit sell price from imported data (used for GP%
+     * calculation)
+     */
+    public void setLastUnitSellPrice(BigDecimal value) {
+        set(14, value);
+    }
+
+    /**
+     * Getter for
+     * <code>public.pricing_session_line_items.last_unit_sell_price</code>.
+     * Historical average unit sell price from imported data (used for GP%
+     * calculation)
+     */
+    public BigDecimal getLastUnitSellPrice() {
+        return (BigDecimal) get(14);
+    }
+
+    /**
+     * Setter for <code>public.pricing_session_line_items.last_amount</code>.
+     * Historical total amount (last_unit_sell_price × quantity)
+     */
+    public void setLastAmount(BigDecimal value) {
+        set(15, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_session_line_items.last_amount</code>.
+     * Historical total amount (last_unit_sell_price × quantity)
+     */
+    public BigDecimal getLastAmount() {
+        return (BigDecimal) get(15);
+    }
+
+    /**
+     * Setter for
+     * <code>public.pricing_session_line_items.last_gross_profit</code>.
+     * Historical gross profit (last_amount - last_cost × quantity)
+     */
+    public void setLastGrossProfit(BigDecimal value) {
+        set(16, value);
+    }
+
+    /**
+     * Getter for
+     * <code>public.pricing_session_line_items.last_gross_profit</code>.
+     * Historical gross profit (last_amount - last_cost × quantity)
+     */
+    public BigDecimal getLastGrossProfit() {
+        return (BigDecimal) get(16);
+    }
+
+    /**
+     * Setter for <code>public.pricing_session_line_items.incoming_cost</code>.
+     * Current cost from product_costs.stdcost (new cost for pricing)
+     */
+    public void setIncomingCost(BigDecimal value) {
+        set(17, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_session_line_items.incoming_cost</code>.
+     * Current cost from product_costs.stdcost (new cost for pricing)
+     */
+    public BigDecimal getIncomingCost() {
+        return (BigDecimal) get(17);
+    }
+
+    /**
+     * Setter for
+     * <code>public.pricing_session_line_items.new_unit_sell_price</code>. New
+     * unit sell price calculated by pricing rules or manually set
+     */
+    public void setNewUnitSellPrice(BigDecimal value) {
+        set(18, value);
+    }
+
+    /**
+     * Getter for
+     * <code>public.pricing_session_line_items.new_unit_sell_price</code>. New
+     * unit sell price calculated by pricing rules or manually set
+     */
+    public BigDecimal getNewUnitSellPrice() {
+        return (BigDecimal) get(18);
+    }
+
+    /**
+     * Setter for <code>public.pricing_session_line_items.new_amount</code>. New
+     * total amount (new_unit_sell_price × quantity)
+     */
+    public void setNewAmount(BigDecimal value) {
+        set(19, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_session_line_items.new_amount</code>. New
+     * total amount (new_unit_sell_price × quantity)
+     */
+    public BigDecimal getNewAmount() {
+        return (BigDecimal) get(19);
+    }
+
+    /**
+     * Setter for
+     * <code>public.pricing_session_line_items.new_gross_profit</code>. New
+     * gross profit (new_amount - incoming_cost × quantity)
+     */
+    public void setNewGrossProfit(BigDecimal value) {
+        set(20, value);
+    }
+
+    /**
+     * Getter for
+     * <code>public.pricing_session_line_items.new_gross_profit</code>. New
+     * gross profit (new_amount - incoming_cost × quantity)
+     */
+    public BigDecimal getNewGrossProfit() {
+        return (BigDecimal) get(20);
+    }
+
+    /**
+     * Setter for
+     * <code>public.pricing_session_line_items.applied_rule_id</code>. Foreign
+     * key to pricing_rule table - which rule calculated this price (NULL if
+     * manual)
+     */
+    public void setAppliedRuleId(Long value) {
+        set(21, value);
+    }
+
+    /**
+     * Getter for
+     * <code>public.pricing_session_line_items.applied_rule_id</code>. Foreign
+     * key to pricing_rule table - which rule calculated this price (NULL if
+     * manual)
+     */
+    public Long getAppliedRuleId() {
+        return (Long) get(21);
+    }
+
+    /**
+     * Setter for
+     * <code>public.pricing_session_line_items.manual_override</code>. TRUE if
+     * user manually overrode the rule-calculated price
+     */
+    public void setManualOverride(Boolean value) {
+        set(22, value);
+    }
+
+    /**
+     * Getter for
+     * <code>public.pricing_session_line_items.manual_override</code>. TRUE if
+     * user manually overrode the rule-calculated price
+     */
+    public Boolean getManualOverride() {
+        return (Boolean) get(22);
     }
 
     // -------------------------------------------------------------------------
@@ -229,7 +423,7 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
     /**
      * Create a detached, initialised PricingSessionLineItemsRecord
      */
-    public PricingSessionLineItemsRecord(Long id, Long sessionId, String customerCode, String customerName, String customerRating, String productCode, String productDescription, BigDecimal totalQuantity, BigDecimal totalAmount, BigDecimal originalAmount, BigDecimal totalCost, Boolean amountModified) {
+    public PricingSessionLineItemsRecord(Long id, Long sessionId, String customerCode, String customerName, String customerRating, String productCode, String productDescription, String primaryGroup, BigDecimal totalQuantity, BigDecimal totalAmount, BigDecimal originalAmount, BigDecimal totalCost, Boolean amountModified, BigDecimal lastCost, BigDecimal lastUnitSellPrice, BigDecimal lastAmount, BigDecimal lastGrossProfit, BigDecimal incomingCost, BigDecimal newUnitSellPrice, BigDecimal newAmount, BigDecimal newGrossProfit, Long appliedRuleId, Boolean manualOverride) {
         super(PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS);
 
         setId(id);
@@ -239,11 +433,22 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
         setCustomerRating(customerRating);
         setProductCode(productCode);
         setProductDescription(productDescription);
+        setPrimaryGroup(primaryGroup);
         setTotalQuantity(totalQuantity);
         setTotalAmount(totalAmount);
         setOriginalAmount(originalAmount);
         setTotalCost(totalCost);
         setAmountModified(amountModified);
+        setLastCost(lastCost);
+        setLastUnitSellPrice(lastUnitSellPrice);
+        setLastAmount(lastAmount);
+        setLastGrossProfit(lastGrossProfit);
+        setIncomingCost(incomingCost);
+        setNewUnitSellPrice(newUnitSellPrice);
+        setNewAmount(newAmount);
+        setNewGrossProfit(newGrossProfit);
+        setAppliedRuleId(appliedRuleId);
+        setManualOverride(manualOverride);
         resetTouchedOnNotNull();
     }
 }
