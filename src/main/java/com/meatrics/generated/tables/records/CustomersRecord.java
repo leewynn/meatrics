@@ -13,8 +13,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
- * Customer master data. Customer-specific pricing is determined by existence of
- * pricing rules with matching customer_code.
+ * Customer master data with ratings for pricing analysis
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class CustomersRecord extends UpdatableRecordImpl<CustomersRecord> {
@@ -65,7 +64,7 @@ public class CustomersRecord extends UpdatableRecordImpl<CustomersRecord> {
 
     /**
      * Setter for <code>public.customers.customer_rating</code>. Customer rating
-     * category (e.g., A, B, C) for pricing and analysis purposes
+     * category (e.g., A, B, C) for pricing and analysis
      */
     public void setCustomerRating(String value) {
         set(3, value);
@@ -73,7 +72,7 @@ public class CustomersRecord extends UpdatableRecordImpl<CustomersRecord> {
 
     /**
      * Getter for <code>public.customers.customer_rating</code>. Customer rating
-     * category (e.g., A, B, C) for pricing and analysis purposes
+     * category (e.g., A, B, C) for pricing and analysis
      */
     public String getCustomerRating() {
         return (String) get(3);

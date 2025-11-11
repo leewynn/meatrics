@@ -1,5 +1,7 @@
 package com.meatrics.pricing;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,16 +16,21 @@ import java.util.stream.Collectors;
 @Service
 public class PricingSessionService {
 
+    private static final Logger log = LoggerFactory.getLogger(PricingSessionService.class);
+
     private final PricingSessionRepository pricingSessionRepository;
     private final PricingSessionLineItemRepository lineItemRepository;
     private final CustomerRepository customerRepository;
+    private final PricingRuleRepository pricingRuleRepository;
 
     public PricingSessionService(PricingSessionRepository pricingSessionRepository,
                                  PricingSessionLineItemRepository lineItemRepository,
-                                 CustomerRepository customerRepository) {
+                                 CustomerRepository customerRepository,
+                                 PricingRuleRepository pricingRuleRepository) {
         this.pricingSessionRepository = pricingSessionRepository;
         this.lineItemRepository = lineItemRepository;
         this.customerRepository = customerRepository;
+        this.pricingRuleRepository = pricingRuleRepository;
     }
 
     /**
@@ -157,8 +164,30 @@ public class PricingSessionService {
         // Historical pricing data (critical for MAINTAIN_GP_PERCENT rule)
         lineItem.setLastCost(item.getLastCost());
         lineItem.setLastUnitSellPrice(item.getLastUnitSellPrice());
+        lineItem.setLastAmount(item.getLastAmount());
+        lineItem.setLastGrossProfit(item.getLastGrossProfit());
         lineItem.setIncomingCost(item.getIncomingCost());
         lineItem.setPrimaryGroup(item.getPrimaryGroup());
+
+        // New pricing data (calculated by rules or manually set)
+        lineItem.setNewUnitSellPrice(item.getNewUnitSellPrice());
+        lineItem.setNewAmount(item.getNewAmount());
+        lineItem.setNewGrossProfit(item.getNewGrossProfit());
+
+        // Pricing rule metadata - serialize applied rules to comma-separated string
+        String appliedRulesStr = null;
+        if (item.getAppliedRules() != null && !item.getAppliedRules().isEmpty()) {
+            appliedRulesStr = item.getAppliedRules().stream()
+                    .map(PricingRule::getRuleName)
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse(null);
+            log.info("Saving product {}: serialized {} rules to '{}'",
+                     item.getProductCode(), item.getAppliedRules().size(), appliedRulesStr);
+        } else {
+            log.info("Saving product {}: no applied rules to serialize", item.getProductCode());
+        }
+        lineItem.setAppliedRule(appliedRulesStr);
+        lineItem.setManualOverride(item.isManualOverride());
 
         return lineItem;
     }
@@ -182,8 +211,52 @@ public class PricingSessionService {
         // Historical pricing data (critical for MAINTAIN_GP_PERCENT rule)
         groupedItem.setLastCost(item.getLastCost());
         groupedItem.setLastUnitSellPrice(item.getLastUnitSellPrice());
+        groupedItem.setLastAmount(item.getLastAmount());
+        groupedItem.setLastGrossProfit(item.getLastGrossProfit());
         groupedItem.setIncomingCost(item.getIncomingCost());
         groupedItem.setPrimaryGroup(item.getPrimaryGroup());
+
+        // New pricing data (calculated by rules or manually set)
+        groupedItem.setNewUnitSellPrice(item.getNewUnitSellPrice());
+        groupedItem.setNewAmount(item.getNewAmount());
+        groupedItem.setNewGrossProfit(item.getNewGrossProfit());
+
+        // Restore applied rules from comma-separated string
+        // Fetch full PricingRule objects from database by name for detailed display
+        String appliedRuleStr = item.getAppliedRule();
+        log.info("Restoring rules for product {}: appliedRule string = '{}'",
+                 item.getProductCode(), appliedRuleStr);
+
+        if (appliedRuleStr != null && !appliedRuleStr.trim().isEmpty()) {
+            String[] ruleNames = appliedRuleStr.split(",");
+            List<PricingRule> restoredRules = new java.util.ArrayList<>();
+            for (String ruleName : ruleNames) {
+                if (ruleName != null && !ruleName.trim().isEmpty()) {
+                    String trimmedName = ruleName.trim();
+                    // Try to fetch full rule from database
+                    Optional<PricingRule> fullRule = pricingRuleRepository.findByRuleName(trimmedName);
+                    if (fullRule.isPresent()) {
+                        restoredRules.add(fullRule.get());
+                        log.info("Restored full rule: {} (with all metadata)", trimmedName);
+                    } else {
+                        // Fallback: create lightweight rule with just the name
+                        PricingRule lightweightRule = new PricingRule();
+                        lightweightRule.setRuleName(trimmedName);
+                        restoredRules.add(lightweightRule);
+                        log.warn("Rule '{}' not found in database, using lightweight version", trimmedName);
+                    }
+                }
+            }
+            if (!restoredRules.isEmpty()) {
+                groupedItem.setAppliedRules(restoredRules);
+                log.info("Set {} applied rules on grouped item", restoredRules.size());
+            }
+        } else {
+            log.warn("No applied rules to restore for product {}", item.getProductCode());
+        }
+
+        // Manual override flag
+        groupedItem.setManualOverride(item.getManualOverride() != null ? item.getManualOverride() : false);
 
         return groupedItem;
     }

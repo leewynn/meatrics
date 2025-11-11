@@ -68,9 +68,8 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
 
     /**
      * The column <code>public.pricing_session_line_items.session_id</code>.
-     * Foreign key to pricing_sessions table
      */
-    public final TableField<PricingSessionLineItemsRecord, Long> SESSION_ID = createField(DSL.name("session_id"), SQLDataType.BIGINT.nullable(false), this, "Foreign key to pricing_sessions table");
+    public final TableField<PricingSessionLineItemsRecord, Long> SESSION_ID = createField(DSL.name("session_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.pricing_session_line_items.customer_code</code>.
@@ -85,9 +84,8 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
     /**
      * The column
      * <code>public.pricing_session_line_items.customer_rating</code>.
-     * Session-specific customer rating (can be modified within the session)
      */
-    public final TableField<PricingSessionLineItemsRecord, String> CUSTOMER_RATING = createField(DSL.name("customer_rating"), SQLDataType.VARCHAR(50), this, "Session-specific customer rating (can be modified within the session)");
+    public final TableField<PricingSessionLineItemsRecord, String> CUSTOMER_RATING = createField(DSL.name("customer_rating"), SQLDataType.VARCHAR(50), this, "");
 
     /**
      * The column <code>public.pricing_session_line_items.product_code</code>.
@@ -102,93 +100,88 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
 
     /**
      * The column <code>public.pricing_session_line_items.primary_group</code>.
-     * Product category/primary group for rule matching
      */
-    public final TableField<PricingSessionLineItemsRecord, String> PRIMARY_GROUP = createField(DSL.name("primary_group"), SQLDataType.VARCHAR(255), this, "Product category/primary group for rule matching");
+    public final TableField<PricingSessionLineItemsRecord, String> PRIMARY_GROUP = createField(DSL.name("primary_group"), SQLDataType.VARCHAR(255), this, "");
 
     /**
      * The column <code>public.pricing_session_line_items.total_quantity</code>.
+     * Total quantity for this customer+product combination (6 decimal precision
+     * for fractional units)
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> TOTAL_QUANTITY = createField(DSL.name("total_quantity"), SQLDataType.NUMERIC(19, 2), this, "");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> TOTAL_QUANTITY = createField(DSL.name("total_quantity"), SQLDataType.NUMERIC(19, 6), this, "Total quantity for this customer+product combination (6 decimal precision for fractional units)");
 
     /**
      * The column <code>public.pricing_session_line_items.total_amount</code>.
-     * Current amount (may be modified from original)
+     * Current amount with 6 decimal precision (display rounds to 2)
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> TOTAL_AMOUNT = createField(DSL.name("total_amount"), SQLDataType.NUMERIC(19, 2), this, "Current amount (may be modified from original)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> TOTAL_AMOUNT = createField(DSL.name("total_amount"), SQLDataType.NUMERIC(19, 6), this, "Current amount with 6 decimal precision (display rounds to 2)");
 
     /**
      * The column
-     * <code>public.pricing_session_line_items.original_amount</code>. Original
-     * amount before any modifications (for tracking changes)
+     * <code>public.pricing_session_line_items.original_amount</code>.
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> ORIGINAL_AMOUNT = createField(DSL.name("original_amount"), SQLDataType.NUMERIC(19, 2), this, "Original amount before any modifications (for tracking changes)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> ORIGINAL_AMOUNT = createField(DSL.name("original_amount"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column <code>public.pricing_session_line_items.total_cost</code>.
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> TOTAL_COST = createField(DSL.name("total_cost"), SQLDataType.NUMERIC(19, 2), this, "");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> TOTAL_COST = createField(DSL.name("total_cost"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column
-     * <code>public.pricing_session_line_items.amount_modified</code>. Flag
-     * indicating whether the amount was modified from the original
+     * <code>public.pricing_session_line_items.amount_modified</code>.
      */
-    public final TableField<PricingSessionLineItemsRecord, Boolean> AMOUNT_MODIFIED = createField(DSL.name("amount_modified"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "Flag indicating whether the amount was modified from the original");
+    public final TableField<PricingSessionLineItemsRecord, Boolean> AMOUNT_MODIFIED = createField(DSL.name("amount_modified"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
 
     /**
      * The column <code>public.pricing_session_line_items.last_cost</code>.
-     * Historical average unit cost from imported data (used for GP%
-     * calculation)
+     * Historical average unit cost with 6 decimal precision
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_COST = createField(DSL.name("last_cost"), SQLDataType.NUMERIC(19, 2), this, "Historical average unit cost from imported data (used for GP% calculation)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_COST = createField(DSL.name("last_cost"), SQLDataType.NUMERIC(19, 6), this, "Historical average unit cost with 6 decimal precision");
 
     /**
      * The column
      * <code>public.pricing_session_line_items.last_unit_sell_price</code>.
-     * Historical average unit sell price from imported data (used for GP%
-     * calculation)
+     * Historical average unit sell price with 6 decimal precision
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_UNIT_SELL_PRICE = createField(DSL.name("last_unit_sell_price"), SQLDataType.NUMERIC(19, 2), this, "Historical average unit sell price from imported data (used for GP% calculation)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_UNIT_SELL_PRICE = createField(DSL.name("last_unit_sell_price"), SQLDataType.NUMERIC(19, 6), this, "Historical average unit sell price with 6 decimal precision");
 
     /**
      * The column <code>public.pricing_session_line_items.last_amount</code>.
-     * Historical total amount (last_unit_sell_price × quantity)
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_AMOUNT = createField(DSL.name("last_amount"), SQLDataType.NUMERIC(19, 2), this, "Historical total amount (last_unit_sell_price × quantity)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_AMOUNT = createField(DSL.name("last_amount"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column
      * <code>public.pricing_session_line_items.last_gross_profit</code>.
-     * Historical gross profit (last_amount - last_cost × quantity)
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_GROSS_PROFIT = createField(DSL.name("last_gross_profit"), SQLDataType.NUMERIC(19, 2), this, "Historical gross profit (last_amount - last_cost × quantity)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> LAST_GROSS_PROFIT = createField(DSL.name("last_gross_profit"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column <code>public.pricing_session_line_items.incoming_cost</code>.
-     * Current cost from product_costs.stdcost (new cost for pricing)
+     * Current unit cost with 6 decimal precision
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> INCOMING_COST = createField(DSL.name("incoming_cost"), SQLDataType.NUMERIC(19, 2), this, "Current cost from product_costs.stdcost (new cost for pricing)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> INCOMING_COST = createField(DSL.name("incoming_cost"), SQLDataType.NUMERIC(19, 6), this, "Current unit cost with 6 decimal precision");
 
     /**
      * The column
      * <code>public.pricing_session_line_items.new_unit_sell_price</code>. New
-     * unit sell price calculated by pricing rules or manually set
+     * unit sell price with 6 decimal precision (display rounds to 2)
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_UNIT_SELL_PRICE = createField(DSL.name("new_unit_sell_price"), SQLDataType.NUMERIC(19, 2), this, "New unit sell price calculated by pricing rules or manually set");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_UNIT_SELL_PRICE = createField(DSL.name("new_unit_sell_price"), SQLDataType.NUMERIC(19, 6), this, "New unit sell price with 6 decimal precision (display rounds to 2)");
 
     /**
      * The column <code>public.pricing_session_line_items.new_amount</code>. New
-     * total amount (new_unit_sell_price × quantity)
+     * total amount with 6 decimal precision (display rounds to 2)
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_AMOUNT = createField(DSL.name("new_amount"), SQLDataType.NUMERIC(19, 2), this, "New total amount (new_unit_sell_price × quantity)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_AMOUNT = createField(DSL.name("new_amount"), SQLDataType.NUMERIC(19, 6), this, "New total amount with 6 decimal precision (display rounds to 2)");
 
     /**
      * The column
      * <code>public.pricing_session_line_items.new_gross_profit</code>. New
-     * gross profit (new_amount - incoming_cost × quantity)
+     * gross profit with 6 decimal precision (display rounds to 2)
      */
-    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_GROSS_PROFIT = createField(DSL.name("new_gross_profit"), SQLDataType.NUMERIC(19, 2), this, "New gross profit (new_amount - incoming_cost × quantity)");
+    public final TableField<PricingSessionLineItemsRecord, BigDecimal> NEW_GROSS_PROFIT = createField(DSL.name("new_gross_profit"), SQLDataType.NUMERIC(19, 6), this, "New gross profit with 6 decimal precision (display rounds to 2)");
 
     /**
      * The column
@@ -204,6 +197,13 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
      * user manually overrode the rule-calculated price
      */
     public final TableField<PricingSessionLineItemsRecord, Boolean> MANUAL_OVERRIDE = createField(DSL.name("manual_override"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "TRUE if user manually overrode the rule-calculated price");
+
+    /**
+     * The column <code>public.pricing_session_line_items.applied_rule</code>.
+     * Comma-separated list of rule names that were applied to calculate this
+     * price
+     */
+    public final TableField<PricingSessionLineItemsRecord, String> APPLIED_RULE = createField(DSL.name("applied_rule"), SQLDataType.CLOB, this, "Comma-separated list of rule names that were applied to calculate this price");
 
     private PricingSessionLineItems(Name alias, Table<PricingSessionLineItemsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

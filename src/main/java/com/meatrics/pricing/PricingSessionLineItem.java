@@ -23,8 +23,17 @@ public class PricingSessionLineItem {
     // Historical pricing data fields (needed for MAINTAIN_GP_PERCENT rule)
     private BigDecimal lastCost;          // Historical average unit cost
     private BigDecimal lastUnitSellPrice; // Historical average unit sell price
+    private BigDecimal lastAmount;        // Historical total amount
+    private BigDecimal lastGrossProfit;   // Historical gross profit
     private BigDecimal incomingCost;      // New incoming cost from product_costs
     private String primaryGroup;          // Product category for rule matching
+
+    // New pricing data fields (calculated by rules or manually set)
+    private BigDecimal newUnitSellPrice;  // Calculated unit sell price
+    private BigDecimal newAmount;         // Calculated total amount
+    private BigDecimal newGrossProfit;    // Calculated gross profit
+    private String appliedRule;           // Comma-separated list of rule names applied
+    private Boolean manualOverride;       // Flag if price was manually set
 
     public PricingSessionLineItem() {
     }
@@ -156,5 +165,61 @@ public class PricingSessionLineItem {
 
     public void setPrimaryGroup(String primaryGroup) {
         this.primaryGroup = primaryGroup;
+    }
+
+    public BigDecimal getLastAmount() {
+        return lastAmount;
+    }
+
+    public void setLastAmount(BigDecimal lastAmount) {
+        this.lastAmount = lastAmount;
+    }
+
+    public BigDecimal getLastGrossProfit() {
+        return lastGrossProfit;
+    }
+
+    public void setLastGrossProfit(BigDecimal lastGrossProfit) {
+        this.lastGrossProfit = lastGrossProfit;
+    }
+
+    public BigDecimal getNewUnitSellPrice() {
+        return newUnitSellPrice;
+    }
+
+    public void setNewUnitSellPrice(BigDecimal newUnitSellPrice) {
+        this.newUnitSellPrice = newUnitSellPrice;
+    }
+
+    public BigDecimal getNewAmount() {
+        return newAmount;
+    }
+
+    public void setNewAmount(BigDecimal newAmount) {
+        this.newAmount = newAmount;
+    }
+
+    public BigDecimal getNewGrossProfit() {
+        return newGrossProfit;
+    }
+
+    public void setNewGrossProfit(BigDecimal newGrossProfit) {
+        this.newGrossProfit = newGrossProfit;
+    }
+
+    public String getAppliedRule() {
+        return appliedRule;
+    }
+
+    public void setAppliedRule(String appliedRule) {
+        this.appliedRule = appliedRule;
+    }
+
+    public Boolean getManualOverride() {
+        return manualOverride;
+    }
+
+    public void setManualOverride(Boolean manualOverride) {
+        this.manualOverride = manualOverride;
     }
 }

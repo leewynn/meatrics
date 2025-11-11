@@ -15,7 +15,8 @@ import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
- * Dynamic pricing rules for calculating sell prices based on conditions
+ * Dynamic pricing rules for calculating sell prices with layered multi-rule
+ * support
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
@@ -38,7 +39,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
 
     /**
      * Setter for <code>public.pricing_rule.rule_name</code>. User-friendly name
-     * for the rule (e.g., "ABC Meats - Beef Premium")
+     * for the rule
      */
     public void setRuleName(String value) {
         set(1, value);
@@ -46,7 +47,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
 
     /**
      * Getter for <code>public.pricing_rule.rule_name</code>. User-friendly name
-     * for the rule (e.g., "ABC Meats - Beef Premium")
+     * for the rule
      */
     public String getRuleName() {
         return (String) get(1);
@@ -102,7 +103,8 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
 
     /**
      * Setter for <code>public.pricing_rule.pricing_method</code>. Pricing
-     * calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE
+     * calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE,
+     * MAINTAIN_GP_PERCENT
      */
     public void setPricingMethod(String value) {
         set(5, value);
@@ -110,25 +112,24 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
 
     /**
      * Getter for <code>public.pricing_rule.pricing_method</code>. Pricing
-     * calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE
+     * calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE,
+     * MAINTAIN_GP_PERCENT
      */
     public String getPricingMethod() {
         return (String) get(5);
     }
 
     /**
-     * Setter for <code>public.pricing_rule.pricing_value</code>. Value for
-     * calculation (e.g., 1.20 for 20% markup, 5.00 for $5 markup). Can be NULL
-     * for MAINTAIN_GP_PERCENT (uses historical GP% only)
+     * Setter for <code>public.pricing_rule.pricing_value</code>. Pricing value
+     * with 6 decimal precision (multipliers, fixed amounts, GP percentages)
      */
     public void setPricingValue(BigDecimal value) {
         set(6, value);
     }
 
     /**
-     * Getter for <code>public.pricing_rule.pricing_value</code>. Value for
-     * calculation (e.g., 1.20 for 20% markup, 5.00 for $5 markup). Can be NULL
-     * for MAINTAIN_GP_PERCENT (uses historical GP% only)
+     * Getter for <code>public.pricing_rule.pricing_value</code>. Pricing value
+     * with 6 decimal precision (multipliers, fixed amounts, GP percentages)
      */
     public BigDecimal getPricingValue() {
         return (BigDecimal) get(6);
@@ -136,7 +137,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
 
     /**
      * Setter for <code>public.pricing_rule.priority</code>. Lower number =
-     * higher priority. First matching rule wins.
+     * higher priority. Used for sorting within same layer.
      */
     public void setPriority(Integer value) {
         set(7, value);
@@ -144,128 +145,118 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
 
     /**
      * Getter for <code>public.pricing_rule.priority</code>. Lower number =
-     * higher priority. First matching rule wins.
+     * higher priority. Used for sorting within same layer.
      */
     public Integer getPriority() {
         return (Integer) get(7);
     }
 
     /**
-     * Setter for <code>public.pricing_rule.is_active</code>. Whether this rule
-     * is currently active
+     * Setter for <code>public.pricing_rule.is_active</code>.
      */
     public void setIsActive(Boolean value) {
         set(8, value);
     }
 
     /**
-     * Getter for <code>public.pricing_rule.is_active</code>. Whether this rule
-     * is currently active
+     * Getter for <code>public.pricing_rule.is_active</code>.
      */
     public Boolean getIsActive() {
         return (Boolean) get(8);
     }
 
     /**
+     * Setter for <code>public.pricing_rule.rule_category</code>. Category/layer
+     * of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT,
+     * PROMOTIONAL
+     */
+    public void setRuleCategory(String value) {
+        set(9, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_rule.rule_category</code>. Category/layer
+     * of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT,
+     * PROMOTIONAL
+     */
+    public String getRuleCategory() {
+        return (String) get(9);
+    }
+
+    /**
+     * Setter for <code>public.pricing_rule.layer_order</code>. Execution order
+     * within the same rule_category. Lower number executes first.
+     */
+    public void setLayerOrder(Integer value) {
+        set(10, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_rule.layer_order</code>. Execution order
+     * within the same rule_category. Lower number executes first.
+     */
+    public Integer getLayerOrder() {
+        return (Integer) get(10);
+    }
+
+    /**
+     * Setter for <code>public.pricing_rule.valid_from</code>. Date when this
+     * rule becomes active. NULL means always active.
+     */
+    public void setValidFrom(LocalDate value) {
+        set(11, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_rule.valid_from</code>. Date when this
+     * rule becomes active. NULL means always active.
+     */
+    public LocalDate getValidFrom() {
+        return (LocalDate) get(11);
+    }
+
+    /**
+     * Setter for <code>public.pricing_rule.valid_to</code>. Date when this rule
+     * expires. NULL means never expires.
+     */
+    public void setValidTo(LocalDate value) {
+        set(12, value);
+    }
+
+    /**
+     * Getter for <code>public.pricing_rule.valid_to</code>. Date when this rule
+     * expires. NULL means never expires.
+     */
+    public LocalDate getValidTo() {
+        return (LocalDate) get(12);
+    }
+
+    /**
      * Setter for <code>public.pricing_rule.created_at</code>.
      */
     public void setCreatedAt(LocalDateTime value) {
-        set(9, value);
+        set(13, value);
     }
 
     /**
      * Getter for <code>public.pricing_rule.created_at</code>.
      */
     public LocalDateTime getCreatedAt() {
-        return (LocalDateTime) get(9);
+        return (LocalDateTime) get(13);
     }
 
     /**
      * Setter for <code>public.pricing_rule.updated_at</code>.
      */
     public void setUpdatedAt(LocalDateTime value) {
-        set(10, value);
+        set(14, value);
     }
 
     /**
      * Getter for <code>public.pricing_rule.updated_at</code>.
      */
     public LocalDateTime getUpdatedAt() {
-        return (LocalDateTime) get(10);
-    }
-
-    /**
-     * Setter for <code>public.pricing_rule.rule_category</code>. Category/layer
-     * of the pricing rule: BASE_PRICE (foundation layer), CUSTOMER_ADJUSTMENT
-     * (customer-specific modifications), PRODUCT_ADJUSTMENT (product-specific
-     * adjustments), PROMOTIONAL (time-bound promotions)
-     */
-    public void setRuleCategory(String value) {
-        set(11, value);
-    }
-
-    /**
-     * Getter for <code>public.pricing_rule.rule_category</code>. Category/layer
-     * of the pricing rule: BASE_PRICE (foundation layer), CUSTOMER_ADJUSTMENT
-     * (customer-specific modifications), PRODUCT_ADJUSTMENT (product-specific
-     * adjustments), PROMOTIONAL (time-bound promotions)
-     */
-    public String getRuleCategory() {
-        return (String) get(11);
-    }
-
-    /**
-     * Setter for <code>public.pricing_rule.layer_order</code>. Execution order
-     * within the same rule_category. Lower number executes first. Used for
-     * fine-grained control when multiple rules in the same layer apply.
-     */
-    public void setLayerOrder(Integer value) {
-        set(12, value);
-    }
-
-    /**
-     * Getter for <code>public.pricing_rule.layer_order</code>. Execution order
-     * within the same rule_category. Lower number executes first. Used for
-     * fine-grained control when multiple rules in the same layer apply.
-     */
-    public Integer getLayerOrder() {
-        return (Integer) get(12);
-    }
-
-    /**
-     * Setter for <code>public.pricing_rule.valid_from</code>. Date when this
-     * rule becomes active. NULL means the rule is always active (no start date
-     * restriction). Used for scheduling price changes and promotions.
-     */
-    public void setValidFrom(LocalDate value) {
-        set(13, value);
-    }
-
-    /**
-     * Getter for <code>public.pricing_rule.valid_from</code>. Date when this
-     * rule becomes active. NULL means the rule is always active (no start date
-     * restriction). Used for scheduling price changes and promotions.
-     */
-    public LocalDate getValidFrom() {
-        return (LocalDate) get(13);
-    }
-
-    /**
-     * Setter for <code>public.pricing_rule.valid_to</code>. Date when this rule
-     * expires. NULL means the rule never expires (no end date restriction).
-     * Used for time-bound promotions and seasonal pricing.
-     */
-    public void setValidTo(LocalDate value) {
-        set(14, value);
-    }
-
-    /**
-     * Getter for <code>public.pricing_rule.valid_to</code>. Date when this rule
-     * expires. NULL means the rule never expires (no end date restriction).
-     * Used for time-bound promotions and seasonal pricing.
-     */
-    public LocalDate getValidTo() {
-        return (LocalDate) get(14);
+        return (LocalDateTime) get(14);
     }
 
     // -------------------------------------------------------------------------
@@ -291,7 +282,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
     /**
      * Create a detached, initialised PricingRuleRecord
      */
-    public PricingRuleRecord(Long id, String ruleName, String customerCode, String conditionType, String conditionValue, String pricingMethod, BigDecimal pricingValue, Integer priority, Boolean isActive, LocalDateTime createdAt, LocalDateTime updatedAt, String ruleCategory, Integer layerOrder, LocalDate validFrom, LocalDate validTo) {
+    public PricingRuleRecord(Long id, String ruleName, String customerCode, String conditionType, String conditionValue, String pricingMethod, BigDecimal pricingValue, Integer priority, Boolean isActive, String ruleCategory, Integer layerOrder, LocalDate validFrom, LocalDate validTo, LocalDateTime createdAt, LocalDateTime updatedAt) {
         super(PricingRule.PRICING_RULE);
 
         setId(id);
@@ -303,12 +294,12 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
         setPricingValue(pricingValue);
         setPriority(priority);
         setIsActive(isActive);
-        setCreatedAt(createdAt);
-        setUpdatedAt(updatedAt);
         setRuleCategory(ruleCategory);
         setLayerOrder(layerOrder);
         setValidFrom(validFrom);
         setValidTo(validTo);
+        setCreatedAt(createdAt);
+        setUpdatedAt(updatedAt);
         resetTouchedOnNotNull();
     }
 }

@@ -26,28 +26,28 @@ import com.meatrics.generated.tables.VProducts;
 public class Tables {
 
     /**
-     * The table <code>public.cost_import_summary</code>.
+     * Tracks product cost file imports and statistics
      */
     public static final CostImportSummary COST_IMPORT_SUMMARY = CostImportSummary.COST_IMPORT_SUMMARY;
 
     /**
-     * Customer master data. Customer-specific pricing is determined by
-     * existence of pricing rules with matching customer_code.
+     * Customer master data with ratings for pricing analysis
      */
     public static final Customers CUSTOMERS = Customers.CUSTOMERS;
 
     /**
-     * The table <code>public.import_summary</code>.
+     * Tracks Excel file imports and their processing status
      */
     public static final ImportSummary IMPORT_SUMMARY = ImportSummary.IMPORT_SUMMARY;
 
     /**
-     * The table <code>public.imported_line_items</code>.
+     * Staging table for raw sales data imported from Excel files
      */
     public static final ImportedLineItems IMPORTED_LINE_ITEMS = ImportedLineItems.IMPORTED_LINE_ITEMS;
 
     /**
-     * Dynamic pricing rules for calculating sell prices based on conditions
+     * Dynamic pricing rules for calculating sell prices with layered multi-rule
+     * support
      */
     public static final PricingRule PRICING_RULE = PricingRule.PRICING_RULE;
 
@@ -57,13 +57,12 @@ public class Tables {
     public static final PricingSessionLineItems PRICING_SESSION_LINE_ITEMS = PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS;
 
     /**
-     * Tracks pricing review sessions where users can modify and save pricing
-     * data
+     * Tracks pricing review sessions where users modify and save pricing data
      */
     public static final PricingSessions PRICING_SESSIONS = PricingSessions.PRICING_SESSIONS;
 
     /**
-     * The table <code>public.product_costs</code>.
+     * Master product data including costs and pricing
      */
     public static final ProductCosts PRODUCT_COSTS = ProductCosts.PRODUCT_COSTS;
 

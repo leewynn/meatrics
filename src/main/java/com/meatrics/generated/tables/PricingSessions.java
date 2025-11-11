@@ -40,7 +40,7 @@ import org.jooq.impl.TableImpl;
 
 
 /**
- * Tracks pricing review sessions where users can modify and save pricing data
+ * Tracks pricing review sessions where users modify and save pricing data
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class PricingSessions extends TableImpl<PricingSessionsRecord> {
@@ -88,17 +88,16 @@ public class PricingSessions extends TableImpl<PricingSessionsRecord> {
     public final TableField<PricingSessionsRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(50).nullable(false).defaultValue(DSL.field(DSL.raw("'IN_PROGRESS'::character varying"), SQLDataType.VARCHAR)), this, "Session status: IN_PROGRESS, COMPLETED, ARCHIVED");
 
     /**
-     * The column <code>public.pricing_sessions.notes</code>. Optional notes or
-     * comments about this pricing session
+     * The column <code>public.pricing_sessions.notes</code>.
      */
-    public final TableField<PricingSessionsRecord, String> NOTES = createField(DSL.name("notes"), SQLDataType.CLOB, this, "Optional notes or comments about this pricing session");
+    public final TableField<PricingSessionsRecord, String> NOTES = createField(DSL.name("notes"), SQLDataType.CLOB, this, "");
 
     private PricingSessions(Name alias, Table<PricingSessionsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
 
     private PricingSessions(Name alias, Table<PricingSessionsRecord> aliased, Field<?>[] parameters, Condition where) {
-        super(alias, null, aliased, parameters, DSL.comment("Tracks pricing review sessions where users can modify and save pricing data"), TableOptions.table(), where);
+        super(alias, null, aliased, parameters, DSL.comment("Tracks pricing review sessions where users modify and save pricing data"), TableOptions.table(), where);
     }
 
     /**

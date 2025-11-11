@@ -88,17 +88,17 @@ public class VInvoiceLineItems extends TableImpl<VInvoiceLineItemsRecord> {
     /**
      * The column <code>public.v_invoice_line_items.quantity</code>.
      */
-    public final TableField<VInvoiceLineItemsRecord, BigDecimal> QUANTITY = createField(DSL.name("quantity"), SQLDataType.NUMERIC(10, 3), this, "");
+    public final TableField<VInvoiceLineItemsRecord, BigDecimal> QUANTITY = createField(DSL.name("quantity"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column <code>public.v_invoice_line_items.amount</code>.
      */
-    public final TableField<VInvoiceLineItemsRecord, BigDecimal> AMOUNT = createField(DSL.name("amount"), SQLDataType.NUMERIC(12, 2), this, "");
+    public final TableField<VInvoiceLineItemsRecord, BigDecimal> AMOUNT = createField(DSL.name("amount"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column <code>public.v_invoice_line_items.cost</code>.
      */
-    public final TableField<VInvoiceLineItemsRecord, BigDecimal> COST = createField(DSL.name("cost"), SQLDataType.NUMERIC(12, 2), this, "");
+    public final TableField<VInvoiceLineItemsRecord, BigDecimal> COST = createField(DSL.name("cost"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column <code>public.v_invoice_line_items.ref1</code>.
@@ -118,7 +118,7 @@ public class VInvoiceLineItems extends TableImpl<VInvoiceLineItemsRecord> {
     /**
      * The column <code>public.v_invoice_line_items.outstanding_amount</code>.
      */
-    public final TableField<VInvoiceLineItemsRecord, BigDecimal> OUTSTANDING_AMOUNT = createField(DSL.name("outstanding_amount"), SQLDataType.NUMERIC(12, 2), this, "");
+    public final TableField<VInvoiceLineItemsRecord, BigDecimal> OUTSTANDING_AMOUNT = createField(DSL.name("outstanding_amount"), SQLDataType.NUMERIC(19, 6), this, "");
 
     /**
      * The column <code>public.v_invoice_line_items.filename</code>.

@@ -178,18 +178,16 @@ public class PricingSessionsView extends AbstractGridView {
             }
         });
 
-        Button applyFilterButton = new Button("Apply Filter", new Icon(VaadinIcon.FILTER));
+        Button applyFilterButton = new Button("Search", new Icon(VaadinIcon.FILTER));
         applyFilterButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         applyFilterButton.addClickListener(event -> applyFilter());
 
-        Button clearFilterButton = new Button("Clear Filter", new Icon(VaadinIcon.CLOSE_SMALL));
-        clearFilterButton.addClickListener(event -> clearFilter());
 
         undoButton = new Button("Undo", new Icon(VaadinIcon.ARROW_BACKWARD));
         undoButton.setEnabled(false);
         undoButton.addClickListener(event -> undoLastAction());
 
-        HorizontalLayout dateFilterLayout = new HorizontalLayout(startDatePicker, endDatePicker, applyFilterButton, clearFilterButton, undoButton);
+        HorizontalLayout dateFilterLayout = new HorizontalLayout(startDatePicker, endDatePicker, applyFilterButton, undoButton);
         dateFilterLayout.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         dateFilterLayout.setSpacing(true);
 
@@ -565,13 +563,6 @@ public class PricingSessionsView extends AbstractGridView {
 
         footerRow.getCell(dataGrid.getColumnByKey("grossProfit")).setText(
             String.format("$%.2f (%.2f%%)", totalGrossProfit, grossProfitPercentage));
-    }
-
-    private void clearFilter() {
-        // Only clear customer and product filters, keep date range
-        customerNameFilter.clear();
-        productFilter.clear();
-        applySecondaryFilters();
     }
 
     /**

@@ -208,22 +208,22 @@ public class ReportExportService {
     }
 
     /**
-     * Create currency cell style ($#,##0.00)
+     * Create currency cell style with 6-decimal precision ($#,##0.000000)
      */
     private CellStyle createCurrencyStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         DataFormat format = workbook.createDataFormat();
-        style.setDataFormat(format.getFormat("$#,##0.00"));
+        style.setDataFormat(format.getFormat("$#,##0.000000"));
         return style;
     }
 
     /**
-     * Create percentage cell style (0.00%)
+     * Create percentage cell style with 4-decimal precision (0.0000%)
      */
     private CellStyle createPercentageStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         DataFormat format = workbook.createDataFormat();
-        style.setDataFormat(format.getFormat("0.00%"));
+        style.setDataFormat(format.getFormat("0.0000%"));
         return style;
     }
 
@@ -249,7 +249,7 @@ public class ReportExportService {
     }
 
     /**
-     * Create total currency style (bold + currency format)
+     * Create total currency style (bold + 6-decimal currency format)
      */
     private CellStyle createTotalCurrencyStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
@@ -257,13 +257,13 @@ public class ReportExportService {
         font.setBold(true);
         style.setFont(font);
         DataFormat format = workbook.createDataFormat();
-        style.setDataFormat(format.getFormat("$#,##0.00"));
+        style.setDataFormat(format.getFormat("$#,##0.000000"));
         style.setBorderTop(BorderStyle.THIN);
         return style;
     }
 
     /**
-     * Create total percentage style (bold + percentage format)
+     * Create total percentage style (bold + 4-decimal percentage format)
      */
     private CellStyle createTotalPercentageStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
@@ -271,7 +271,7 @@ public class ReportExportService {
         font.setBold(true);
         style.setFont(font);
         DataFormat format = workbook.createDataFormat();
-        style.setDataFormat(format.getFormat("0.00%"));
+        style.setDataFormat(format.getFormat("0.0000%"));
         style.setBorderTop(BorderStyle.THIN);
         return style;
     }

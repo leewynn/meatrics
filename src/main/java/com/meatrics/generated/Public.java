@@ -41,28 +41,28 @@ public class Public extends SchemaImpl {
     public static final Public PUBLIC = new Public();
 
     /**
-     * The table <code>public.cost_import_summary</code>.
+     * Tracks product cost file imports and statistics
      */
     public final CostImportSummary COST_IMPORT_SUMMARY = CostImportSummary.COST_IMPORT_SUMMARY;
 
     /**
-     * Customer master data. Customer-specific pricing is determined by
-     * existence of pricing rules with matching customer_code.
+     * Customer master data with ratings for pricing analysis
      */
     public final Customers CUSTOMERS = Customers.CUSTOMERS;
 
     /**
-     * The table <code>public.import_summary</code>.
+     * Tracks Excel file imports and their processing status
      */
     public final ImportSummary IMPORT_SUMMARY = ImportSummary.IMPORT_SUMMARY;
 
     /**
-     * The table <code>public.imported_line_items</code>.
+     * Staging table for raw sales data imported from Excel files
      */
     public final ImportedLineItems IMPORTED_LINE_ITEMS = ImportedLineItems.IMPORTED_LINE_ITEMS;
 
     /**
-     * Dynamic pricing rules for calculating sell prices based on conditions
+     * Dynamic pricing rules for calculating sell prices with layered multi-rule
+     * support
      */
     public final PricingRule PRICING_RULE = PricingRule.PRICING_RULE;
 
@@ -72,13 +72,12 @@ public class Public extends SchemaImpl {
     public final PricingSessionLineItems PRICING_SESSION_LINE_ITEMS = PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS;
 
     /**
-     * Tracks pricing review sessions where users can modify and save pricing
-     * data
+     * Tracks pricing review sessions where users modify and save pricing data
      */
     public final PricingSessions PRICING_SESSIONS = PricingSessions.PRICING_SESSIONS;
 
     /**
-     * The table <code>public.product_costs</code>.
+     * Master product data including costs and pricing
      */
     public final ProductCosts PRODUCT_COSTS = ProductCosts.PRODUCT_COSTS;
 

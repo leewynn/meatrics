@@ -13,7 +13,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
- * Tracks pricing review sessions where users can modify and save pricing data
+ * Tracks pricing review sessions where users modify and save pricing data
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class PricingSessionsRecord extends UpdatableRecordImpl<PricingSessionsRecord> {
@@ -95,16 +95,14 @@ public class PricingSessionsRecord extends UpdatableRecordImpl<PricingSessionsRe
     }
 
     /**
-     * Setter for <code>public.pricing_sessions.notes</code>. Optional notes or
-     * comments about this pricing session
+     * Setter for <code>public.pricing_sessions.notes</code>.
      */
     public void setNotes(String value) {
         set(5, value);
     }
 
     /**
-     * Getter for <code>public.pricing_sessions.notes</code>. Optional notes or
-     * comments about this pricing session
+     * Getter for <code>public.pricing_sessions.notes</code>.
      */
     public String getNotes() {
         return (String) get(5);

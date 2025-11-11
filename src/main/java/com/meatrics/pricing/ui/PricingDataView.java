@@ -125,14 +125,12 @@ public class PricingDataView extends AbstractGridView {
             }
         });
 
-        Button applyFilterButton = new Button("Apply Filter", new Icon(VaadinIcon.FILTER));
+        Button applyFilterButton = new Button("Search", new Icon(VaadinIcon.FILTER));
         applyFilterButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         applyFilterButton.addClickListener(event -> applyFilter());
 
-        Button clearFilterButton = new Button("Clear Filter", new Icon(VaadinIcon.CLOSE_SMALL));
-        clearFilterButton.addClickListener(event -> clearFilter());
 
-        HorizontalLayout dateFilterLayout = new HorizontalLayout(startDatePicker, endDatePicker, applyFilterButton, clearFilterButton);
+        HorizontalLayout dateFilterLayout = new HorizontalLayout(startDatePicker, endDatePicker, applyFilterButton);
         dateFilterLayout.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         dateFilterLayout.setSpacing(true);
 

@@ -4,6 +4,7 @@
 package com.meatrics.generated;
 
 
+import com.meatrics.generated.tables.CostImportSummary;
 import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
@@ -28,6 +29,7 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index IDX_COST_IMPORT_SUMMARY_FILENAME = Internal.createIndex(DSL.name("idx_cost_import_summary_filename"), CostImportSummary.COST_IMPORT_SUMMARY, new OrderField[] { CostImportSummary.COST_IMPORT_SUMMARY.FILENAME }, false);
     public static final Index IDX_CUSTOMERS_CODE = Internal.createIndex(DSL.name("idx_customers_code"), Customers.CUSTOMERS, new OrderField[] { Customers.CUSTOMERS.CUSTOMER_CODE }, false);
     public static final Index IDX_IMPORT_SUMMARY_FILENAME = Internal.createIndex(DSL.name("idx_import_summary_filename"), ImportSummary.IMPORT_SUMMARY, new OrderField[] { ImportSummary.IMPORT_SUMMARY.FILENAME }, false);
     public static final Index IDX_IMPORT_SUMMARY_IMPORT_DATE = Internal.createIndex(DSL.name("idx_import_summary_import_date"), ImportSummary.IMPORT_SUMMARY, new OrderField[] { ImportSummary.IMPORT_SUMMARY.IMPORT_DATE }, false);

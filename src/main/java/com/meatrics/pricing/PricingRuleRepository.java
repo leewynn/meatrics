@@ -44,6 +44,17 @@ public class PricingRuleRepository {
     }
 
     /**
+     * Find pricing rule by name
+     */
+    public Optional<PricingRule> findByRuleName(String ruleName) {
+        return Optional.ofNullable(
+            dsl.selectFrom(PRICING_RULE)
+                .where(PRICING_RULE.RULE_NAME.eq(ruleName))
+                .fetchOne(this::mapToPricingRule)
+        );
+    }
+
+    /**
      * Find active rules for a specific customer, sorted by priority ascending.
      * Returns customer-specific rules only (where customer_code = customerCode).
      */

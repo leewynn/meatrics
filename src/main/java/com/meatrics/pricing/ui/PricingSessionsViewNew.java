@@ -164,19 +164,16 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
             }
         });
 
-        Button applyFilterButton = new Button("Apply Filter", new Icon(VaadinIcon.FILTER));
+        Button applyFilterButton = new Button("Search", new Icon(VaadinIcon.FILTER));
         applyFilterButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         applyFilterButton.addClickListener(event -> applyFilter());
-
-        Button clearFilterButton = new Button("Clear Filter", new Icon(VaadinIcon.CLOSE_SMALL));
-        clearFilterButton.addClickListener(event -> clearFilter());
 
         Button applyRulesButton = new Button("Apply Rules", new Icon(VaadinIcon.MAGIC));
         applyRulesButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
         applyRulesButton.addClickListener(event -> applyPricingRules());
 
         HorizontalLayout dateFilterLayout = new HorizontalLayout(
-                startDatePicker, endDatePicker, applyFilterButton, clearFilterButton, applyRulesButton);
+                startDatePicker, endDatePicker, applyFilterButton, applyRulesButton);
         dateFilterLayout.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         dateFilterLayout.setSpacing(true);
 
@@ -546,23 +543,6 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
 
             String color = determineGPPercentColor(newGPPercent, lastGPPercent, tolerance);
 
-            // Debug logging for specific edge cases
-            if (item.getProductCode() != null &&
-                (item.getProductCode().equals("SCRM200") || item.getProductCode().equals("LFOCH"))) {
-                log.info("GP$ Coloring Debug - Product: {}, Customer: {}, " +
-                        "NewGP$: {}, NewAmount: {}, NewGP%_calc: {}, NewGP%_display: {}, " +
-                        "LastGP$: {}, LastAmount: {}, LastGP%_calc: {}, LastGP%_display: {}, " +
-                        "Difference: {}, Tolerance: {}, Color: {}",
-                        item.getProductCode(), item.getCustomerName(),
-                        item.getNewGrossProfit(), item.getNewAmount(), newGPPercent,
-                        formatGPPercent(item.getNewGrossProfit(), item.getNewAmount()),
-                        item.getLastGrossProfit(), item.getLastAmount(), lastGPPercent,
-                        formatGPPercent(item.getLastGrossProfit(), item.getLastAmount()),
-                        newGPPercent != null && lastGPPercent != null ?
-                            newGPPercent.subtract(lastGPPercent) : "N/A",
-                        tolerance, color);
-            }
-
             if (color != null) {
                 gpSpan.getStyle().set("color", color).set("font-weight", "bold");
             }
@@ -727,6 +707,71 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
     }
 
     /**
+     * Recalculate intermediate pricing results for loaded sessions.
+     * Applies each rule step-by-step to recreate the calculation breakdown.
+     */
+    private List<BigDecimal> recalculateIntermediateResults(GroupedLineItem item, List<PricingRule> appliedRules) {
+        List<BigDecimal> intermediates = new ArrayList<>();
+        BigDecimal currentPrice = item.getIncomingCost();
+        intermediates.add(currentPrice); // Starting cost
+
+        for (PricingRule rule : appliedRules) {
+            currentPrice = applyRuleToPrice(currentPrice, rule, item);
+            intermediates.add(currentPrice);
+        }
+
+        return intermediates;
+    }
+
+    /**
+     * Apply a single pricing rule to a price (mirrors PriceCalculationService logic)
+     */
+    private BigDecimal applyRuleToPrice(BigDecimal currentPrice, PricingRule rule, GroupedLineItem item) {
+        if (currentPrice == null || rule == null) return currentPrice;
+
+        String method = rule.getPricingMethod();
+        BigDecimal value = rule.getPricingValue();
+
+        if (value == null && !"MAINTAIN_GP_PERCENT".equals(method)) {
+            return currentPrice;
+        }
+
+        switch (method) {
+            case "COST_PLUS_PERCENT":
+                return currentPrice.multiply(value);
+
+            case "COST_PLUS_FIXED":
+                return currentPrice.add(value);
+
+            case "FIXED_PRICE":
+                return value;
+
+            case "MAINTAIN_GP_PERCENT":
+                // For loaded sessions, use the stored newUnitSellPrice directly
+                // since we don't have the exact historical GP% calculation context
+                if (item.getLastGrossProfit() != null && item.getLastAmount() != null
+                    && item.getLastAmount().compareTo(BigDecimal.ZERO) != 0) {
+                    // Calculate historical GP%
+                    BigDecimal historicalGP = item.getLastGrossProfit().divide(item.getLastAmount(), 6, RoundingMode.HALF_UP);
+                    BigDecimal divisor = BigDecimal.ONE.subtract(historicalGP);
+                    if (divisor.compareTo(BigDecimal.ZERO) > 0) {
+                        return item.getIncomingCost().divide(divisor, 6, RoundingMode.HALF_UP);
+                    }
+                } else if (value != null) {
+                    // Use default GP% from rule
+                    BigDecimal divisor = BigDecimal.ONE.subtract(value);
+                    if (divisor.compareTo(BigDecimal.ZERO) > 0) {
+                        return item.getIncomingCost().divide(divisor, 6, RoundingMode.HALF_UP);
+                    }
+                }
+                return currentPrice;
+
+            default:
+                return currentPrice;
+        }
+    }
+
+    /**
      * Format currency value
      */
     private String formatCurrency(BigDecimal value) {
@@ -879,17 +924,21 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
      * Open consolidated price edit dialog with rule details and price editing
      */
     private void openPriceEditDialog(GroupedLineItem item) {
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Edit Unit Sell Price");
-        dialog.setWidth("600px");
+        try {
+            Dialog dialog = new Dialog();
+            dialog.setHeaderTitle("Edit Unit Sell Price");
+            dialog.setWidth("600px");
 
-        VerticalLayout mainLayout = new VerticalLayout();
+            VerticalLayout mainLayout = new VerticalLayout();
         mainLayout.setSpacing(true);
         mainLayout.setPadding(false);
 
         // SECTION 1: Rule Details and Layered Breakdown
         List<PricingRule> appliedRules = item.getAppliedRules();
         List<BigDecimal> intermediateResults = item.getIntermediateResults();
+
+        // Check if this is a loaded session without intermediate results
+        boolean hasIntermediateResults = !intermediateResults.isEmpty();
 
         if (!appliedRules.isEmpty() || item.isManualOverride()) {
             VerticalLayout ruleDetailsSection = new VerticalLayout();
@@ -921,6 +970,110 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
 
                 manualLayout.add(badge, explanation);
                 ruleDetailsSection.add(manualLayout);
+            } else if (!appliedRules.isEmpty() && !hasIntermediateResults) {
+                // Recalculate intermediate results for loaded sessions
+                List<BigDecimal> recalculatedIntermediates = recalculateIntermediateResults(item, appliedRules);
+
+                // Now show the full breakdown with intermediate prices (same as fresh sessions)
+                BigDecimal currentPrice = item.getIncomingCost();
+
+                // Starting price
+                HorizontalLayout startLayout = new HorizontalLayout();
+                startLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+                startLayout.setWidthFull();
+                startLayout.getStyle().set("gap", "8px");
+
+                Span startLabel = new Span("Starting Cost:");
+                startLabel.getStyle()
+                    .set("font-weight", "600")
+                    .set("color", "#666")
+                    .set("min-width", "120px");
+
+                Span startPrice = new Span(formatCurrency(currentPrice));
+                startPrice.getStyle()
+                    .set("font-weight", "bold")
+                    .set("color", "#333");
+
+                startLayout.add(startLabel, startPrice);
+                ruleDetailsSection.add(startLayout);
+
+                // Each rule application with calculations
+                for (int i = 0; i < appliedRules.size(); i++) {
+                    PricingRule rule = appliedRules.get(i);
+                    BigDecimal inputPrice = i < recalculatedIntermediates.size() ?
+                        recalculatedIntermediates.get(i) : currentPrice;
+                    BigDecimal resultPrice = (i + 1) < recalculatedIntermediates.size() ?
+                        recalculatedIntermediates.get(i + 1) : item.getNewUnitSellPrice();
+
+                    VerticalLayout ruleLayout = new VerticalLayout();
+                    ruleLayout.setSpacing(false);
+                    ruleLayout.setPadding(true);
+                    ruleLayout.getStyle()
+                        .set("background-color", "white")
+                        .set("border-left", "4px solid " + getLayerColor(rule.getRuleCategory()))
+                        .set("border-radius", "4px")
+                        .set("padding", "8px")
+                        .set("margin", "4px 0");
+
+                    // Layer and rule name
+                    HorizontalLayout headerLayout = new HorizontalLayout();
+                    headerLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+                    headerLayout.getStyle().set("gap", "6px");
+
+                    Icon layerIcon = getLayerIcon(rule.getRuleCategory());
+                    layerIcon.setSize("16px");
+                    layerIcon.getStyle().set("color", getLayerColor(rule.getRuleCategory()));
+
+                    Span layerName = new Span(rule.getRuleCategory() != null ?
+                        rule.getRuleCategory().getDisplayName() : "Unknown");
+                    layerName.getStyle()
+                        .set("font-weight", "600")
+                        .set("color", getLayerColor(rule.getRuleCategory()))
+                        .set("font-size", "0.85rem");
+
+                    headerLayout.add(layerIcon, layerName);
+
+                    // Rule details
+                    Span ruleName = new Span(rule.getRuleName());
+                    ruleName.getStyle()
+                        .set("font-weight", "600")
+                        .set("color", "#333")
+                        .set("display", "block");
+
+                    Span ruleMethod = new Span(formatPricingMethod(rule.getPricingMethod(), rule.getPricingValue()));
+                    ruleMethod.getStyle()
+                        .set("font-size", "0.85rem")
+                        .set("color", "#666")
+                        .set("display", "block");
+
+                    // Calculation with exact numbers
+                    Span calculation = new Span(formatCalculation(rule.getPricingMethod(), rule.getPricingValue(), inputPrice, resultPrice));
+                    calculation.getStyle()
+                        .set("font-size", "0.85rem")
+                        .set("color", "#2196F3")
+                        .set("font-family", "monospace")
+                        .set("display", "block")
+                        .set("margin-top", "4px");
+
+                    // Price result
+                    HorizontalLayout priceLayout = new HorizontalLayout();
+                    priceLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+                    priceLayout.getStyle().set("gap", "8px").set("margin-top", "4px");
+
+                    Span arrow = new Span("→");
+                    arrow.getStyle().set("color", "#999");
+
+                    Span resultPriceSpan = new Span(formatCurrency(resultPrice));
+                    resultPriceSpan.getStyle()
+                        .set("font-weight", "bold")
+                        .set("color", "#2196F3")
+                        .set("font-size", "1.1rem");
+
+                    priceLayout.add(arrow, resultPriceSpan);
+
+                    ruleLayout.add(headerLayout, ruleName, ruleMethod, calculation, priceLayout);
+                    ruleDetailsSection.add(ruleLayout);
+                }
             } else if (!appliedRules.isEmpty()) {
                 // Show layered calculation with intermediate prices
                 BigDecimal currentPrice = item.getIncomingCost();
@@ -1117,6 +1270,12 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
 
         dialog.add(mainLayout, buttonLayout);
         dialog.open();
+
+        log.info("Price edit dialog opened successfully");
+        } catch (Exception e) {
+            log.error("Error opening price edit dialog for product: " + item.getProductCode(), e);
+            showErrorNotification("Error opening price dialog: " + e.getMessage());
+        }
     }
 
     /**
@@ -1135,7 +1294,11 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
             case "FIXED_PRICE":
                 return String.format("Fixed $%.2f", value);
             case "MAINTAIN_GP_PERCENT":
-                return "Maintain GP% from last cycle";
+                if (value != null) {
+                    return String.format("Maintain GP%% at %.1f%%", value);
+                } else {
+                    return "Maintain GP% from last cycle";
+                }
             default:
                 return method;
         }
@@ -1292,15 +1455,6 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
     }
 
     /**
-     * Clear secondary filters
-     */
-    private void clearFilter() {
-        customerNameFilter.clear();
-        productFilter.clear();
-        applySecondaryFilters();
-    }
-
-    /**
      * Open customer edit dialog
      */
     private void openCustomerEditDialog(GroupedLineItem item) {
@@ -1336,19 +1490,345 @@ public class PricingSessionsViewNew extends VerticalLayout implements BeforeLeav
      * Open save session dialog
      */
     private void openSaveSessionDialog() {
-        // TODO: Implement session save functionality
-        // When implemented, add this after successful save:
-        // hasUnsavedChanges = false;
-        // updateTitleStyle();
-        showErrorNotification("Session save not yet implemented in new view");
+        if (backingList == null || backingList.isEmpty()) {
+            showErrorNotification("No data to save. Please apply a date filter first.");
+            return;
+        }
+
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Save Pricing Session");
+        dialog.setWidth("500px");
+
+        VerticalLayout content = new VerticalLayout();
+        content.setSpacing(true);
+        content.setPadding(true);
+
+        // Session name field
+        TextField sessionNameField = new TextField("Session Name");
+        sessionNameField.setWidthFull();
+        sessionNameField.setPlaceholder("Enter session name...");
+        sessionNameField.setRequired(true);
+        sessionNameField.setRequiredIndicatorVisible(true);
+
+        // Pre-fill with current session name if editing existing session
+        if (currentSession != null) {
+            sessionNameField.setValue(currentSession.getSessionName());
+        }
+
+        // Notes field
+        TextArea notesField = new TextArea("Notes (Optional)");
+        notesField.setWidthFull();
+        notesField.setPlaceholder("Add any notes about this pricing session...");
+        notesField.setHeight("100px");
+
+        if (currentSession != null && currentSession.getNotes() != null) {
+            notesField.setValue(currentSession.getNotes());
+        }
+
+        // Summary info
+        Span summarySpan = new Span(String.format("You are about to save %d line items.", backingList.size()));
+        summarySpan.getStyle().set("color", "var(--lumo-secondary-text-color)");
+
+        content.add(sessionNameField, notesField, summarySpan);
+
+        // Buttons
+        Button saveButton = new Button("Save", event -> {
+            String sessionName = sessionNameField.getValue();
+
+            if (sessionName == null || sessionName.trim().isEmpty()) {
+                showErrorNotification("Session name is required");
+                return;
+            }
+
+            // Check if session name already exists
+            boolean nameExists = pricingSessionService.sessionNameExists(sessionName.trim());
+            boolean isCurrentSession = currentSession != null &&
+                    sessionName.trim().equals(currentSession.getSessionName());
+
+            if (nameExists && !isCurrentSession) {
+                // Session name exists - ask to overwrite
+                ConfirmDialog confirmDialog = new ConfirmDialog();
+                confirmDialog.setHeader("Session Already Exists");
+                confirmDialog.setText("A session with name '" + sessionName.trim() +
+                        "' already exists. Do you want to overwrite it?");
+                confirmDialog.setCancelable(true);
+                confirmDialog.setCancelText("Cancel");
+                confirmDialog.setConfirmText("Overwrite");
+                confirmDialog.setConfirmButtonTheme("error primary");
+
+                confirmDialog.addConfirmListener(confirmEvent -> {
+                    performSave(sessionName.trim(), notesField.getValue(), dialog);
+                });
+
+                confirmDialog.open();
+            } else {
+                // New session or updating current session
+                performSave(sessionName.trim(), notesField.getValue(), dialog);
+            }
+        });
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        Button cancelButton = new Button("Cancel", event -> dialog.close());
+
+        HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
+        buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        buttonLayout.setWidthFull();
+
+        dialog.add(content, buttonLayout);
+        dialog.open();
+    }
+
+    /**
+     * Perform the actual session save operation
+     */
+    private void performSave(String sessionName, String notes, Dialog dialog) {
+        try {
+            // Log what we're about to save
+            long itemsWithRules = backingList.stream()
+                    .filter(item -> !item.getAppliedRules().isEmpty())
+                    .count();
+            long itemsWithManualOverride = backingList.stream()
+                    .filter(GroupedLineItem::isManualOverride)
+                    .count();
+
+            log.info("Saving session '{}': {} total items, {} with applied rules, {} with manual override",
+                     sessionName, backingList.size(), itemsWithRules, itemsWithManualOverride);
+
+            // Sample first item with rules
+            backingList.stream()
+                    .filter(item -> !item.getAppliedRules().isEmpty())
+                    .findFirst()
+                    .ifPresent(item -> log.info("Sample item {} has {} applied rules: {}",
+                            item.getProductCode(),
+                            item.getAppliedRules().size(),
+                            item.getAppliedRules().stream()
+                                    .map(PricingRule::getRuleName)
+                                    .reduce((a, b) -> a + ", " + b)
+                                    .orElse("none")));
+
+            // Save session with all line items
+            PricingSession savedSession = pricingSessionService.saveSession(sessionName, backingList);
+
+            // Update notes if provided
+            if (notes != null && !notes.trim().isEmpty()) {
+                savedSession.setNotes(notes.trim());
+            }
+
+            // Update UI state
+            currentSession = savedSession;
+            hasUnsavedChanges = false;
+            updateTitleStyle();
+
+            dialog.close();
+            showSuccessNotification("Session '" + sessionName + "' saved successfully with " +
+                    backingList.size() + " line items");
+
+            log.info("Saved pricing session: {} with {} items", sessionName, backingList.size());
+
+        } catch (Exception e) {
+            log.error("Error saving pricing session: " + sessionName, e);
+            showErrorNotification("Error saving session: " + e.getMessage());
+        }
     }
 
     /**
      * Open load session dialog
      */
     private void openLoadSessionDialog() {
-        // TODO: Implement session load functionality
-        showErrorNotification("Session load not yet implemented in new view");
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Load Pricing Session");
+        dialog.setWidth("800px");
+        dialog.setHeight("600px");
+
+        VerticalLayout content = new VerticalLayout();
+        content.setSizeFull();
+        content.setSpacing(true);
+        content.setPadding(false);
+
+        // Grid to show all sessions
+        Grid<PricingSession> sessionGrid = new Grid<>(PricingSession.class, false);
+        sessionGrid.setSizeFull();
+
+        sessionGrid.addColumn(PricingSession::getSessionName)
+                .setHeader("Session Name")
+                .setAutoWidth(true)
+                .setResizable(true)
+                .setSortable(true);
+
+        sessionGrid.addColumn(session -> {
+            if (session.getCreatedDate() != null) {
+                return session.getCreatedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            }
+            return "";
+        }).setHeader("Created")
+                .setAutoWidth(true)
+                .setResizable(true)
+                .setSortable(true);
+
+        sessionGrid.addColumn(session -> {
+            if (session.getLastModifiedDate() != null) {
+                return session.getLastModifiedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            }
+            return "";
+        }).setHeader("Last Modified")
+                .setAutoWidth(true)
+                .setResizable(true)
+                .setSortable(true);
+
+        sessionGrid.addColumn(PricingSession::getStatus)
+                .setHeader("Status")
+                .setAutoWidth(true)
+                .setResizable(true)
+                .setSortable(true);
+
+        sessionGrid.addColumn(session -> {
+            String notes = session.getNotes();
+            if (notes != null && notes.length() > 50) {
+                return notes.substring(0, 50) + "...";
+            }
+            return notes != null ? notes : "";
+        }).setHeader("Notes")
+                .setFlexGrow(1)
+                .setResizable(true);
+
+        // Load all sessions
+        List<PricingSession> sessions = pricingSessionService.getAllSessions();
+        sessionGrid.setItems(sessions);
+
+        // Selection mode
+        sessionGrid.setSelectionMode(Grid.SelectionMode.SINGLE);
+
+        // Info text
+        Span infoSpan = new Span("Select a session and click 'Load' to restore it, or 'Delete' to remove it.");
+        infoSpan.getStyle().set("color", "var(--lumo-secondary-text-color)");
+
+        content.add(infoSpan, sessionGrid);
+
+        // Buttons
+        Button loadButton = new Button("Load", new Icon(VaadinIcon.FOLDER_OPEN));
+        loadButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        loadButton.setEnabled(false);
+
+        Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
+        deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        deleteButton.setEnabled(false);
+
+        Button cancelButton = new Button("Cancel", event -> dialog.close());
+
+        // Enable/disable buttons based on selection
+        sessionGrid.addSelectionListener(selection -> {
+            boolean hasSelection = selection.getFirstSelectedItem().isPresent();
+            loadButton.setEnabled(hasSelection);
+            deleteButton.setEnabled(hasSelection);
+        });
+
+        // Load button action
+        loadButton.addClickListener(event -> {
+            sessionGrid.getSelectedItems().stream().findFirst().ifPresent(selectedSession -> {
+                // Check for unsaved changes
+                if (hasUnsavedChanges) {
+                    ConfirmDialog confirmDialog = new ConfirmDialog();
+                    confirmDialog.setHeader("Unsaved Changes");
+                    confirmDialog.setText("You have unsaved changes. Loading a session will discard them. Continue?");
+                    confirmDialog.setCancelable(true);
+                    confirmDialog.setCancelText("Cancel");
+                    confirmDialog.setConfirmText("Load Session");
+                    confirmDialog.setConfirmButtonTheme("error primary");
+
+                    confirmDialog.addConfirmListener(confirmEvent -> {
+                        performLoad(selectedSession, dialog);
+                    });
+
+                    confirmDialog.open();
+                } else {
+                    performLoad(selectedSession, dialog);
+                }
+            });
+        });
+
+        // Delete button action
+        deleteButton.addClickListener(event -> {
+            sessionGrid.getSelectedItems().stream().findFirst().ifPresent(selectedSession -> {
+                ConfirmDialog confirmDialog = new ConfirmDialog();
+                confirmDialog.setHeader("Delete Session");
+                confirmDialog.setText("Are you sure you want to delete session '" +
+                        selectedSession.getSessionName() + "'? This cannot be undone.");
+                confirmDialog.setCancelable(true);
+                confirmDialog.setCancelText("Cancel");
+                confirmDialog.setConfirmText("Delete");
+                confirmDialog.setConfirmButtonTheme("error primary");
+
+                confirmDialog.addConfirmListener(confirmEvent -> {
+                    try {
+                        pricingSessionService.deleteSession(selectedSession.getId());
+
+                        // Refresh grid
+                        List<PricingSession> updatedSessions = pricingSessionService.getAllSessions();
+                        sessionGrid.setItems(updatedSessions);
+
+                        // If deleted session was current, clear current session
+                        if (currentSession != null && currentSession.getId().equals(selectedSession.getId())) {
+                            currentSession = null;
+                            hasUnsavedChanges = false;
+                            updateTitleStyle();
+                        }
+
+                        showSuccessNotification("Session '" + selectedSession.getSessionName() + "' deleted");
+                        log.info("Deleted pricing session: {}", selectedSession.getSessionName());
+
+                    } catch (Exception e) {
+                        log.error("Error deleting session: " + selectedSession.getSessionName(), e);
+                        showErrorNotification("Error deleting session: " + e.getMessage());
+                    }
+                });
+
+                confirmDialog.open();
+            });
+        });
+
+        HorizontalLayout buttonLayout = new HorizontalLayout(loadButton, deleteButton, cancelButton);
+        buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        buttonLayout.setWidthFull();
+        buttonLayout.getStyle().set("padding-top", "var(--lumo-space-m)");
+
+        VerticalLayout dialogLayout = new VerticalLayout(content, buttonLayout);
+        dialogLayout.setSizeFull();
+        dialogLayout.setSpacing(false);
+        dialogLayout.setPadding(false);
+
+        dialog.add(dialogLayout);
+        dialog.open();
+    }
+
+    /**
+     * Perform the actual session load operation
+     */
+    private void performLoad(PricingSession session, Dialog dialog) {
+        try {
+            // Load line items from session
+            List<GroupedLineItem> loadedItems = pricingSessionService.loadSession(session.getId());
+
+            // Replace backing list with loaded items
+            backingList = new ArrayList<>(loadedItems);
+
+            // Update UI state
+            currentSession = session;
+            hasUnsavedChanges = false;
+            updateTitleStyle();
+
+            // Refresh the grid with loaded data
+            applySecondaryFilters();
+
+            dialog.close();
+            showSuccessNotification("Session '" + session.getSessionName() + "' loaded successfully with " +
+                    loadedItems.size() + " line items");
+
+            log.info("Loaded pricing session: {} with {} items", session.getSessionName(), loadedItems.size());
+
+        } catch (Exception e) {
+            log.error("Error loading pricing session: " + session.getSessionName(), e);
+            showErrorNotification("Error loading session: " + e.getMessage());
+        }
     }
 
     /**

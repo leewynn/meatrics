@@ -39,19 +39,21 @@ public class PricingSessionLineItemRepository {
 
     /**
      * Save all line items for a session (batch insert)
-     * NOTE: After running migration 014, you must regenerate jOOQ code for the new columns
+     * Includes all historical and new pricing data fields
      */
     public void saveAll(Long sessionId, List<PricingSessionLineItem> items) {
         if (items == null || items.isEmpty()) {
             return;
         }
 
-        // Using raw SQL until jOOQ code is regenerated after migration 014
+        // Using raw SQL with all pricing fields
         String sql = "INSERT INTO pricing_session_line_items " +
                 "(session_id, customer_code, customer_name, customer_rating, product_code, " +
                 "product_description, total_quantity, total_amount, original_amount, total_cost, " +
-                "amount_modified, last_cost, last_unit_sell_price, incoming_cost, primary_group) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "amount_modified, last_cost, last_unit_sell_price, last_amount, last_gross_profit, " +
+                "incoming_cost, primary_group, new_unit_sell_price, new_amount, new_gross_profit, " +
+                "applied_rule, manual_override) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         dsl.batch(
             items.stream()
@@ -69,8 +71,15 @@ public class PricingSessionLineItemRepository {
                     item.getAmountModified() != null ? item.getAmountModified() : false,
                     item.getLastCost(),
                     item.getLastUnitSellPrice(),
+                    item.getLastAmount(),
+                    item.getLastGrossProfit(),
                     item.getIncomingCost(),
-                    item.getPrimaryGroup()
+                    item.getPrimaryGroup(),
+                    item.getNewUnitSellPrice(),
+                    item.getNewAmount(),
+                    item.getNewGrossProfit(),
+                    item.getAppliedRule(), // Save rule names as TEXT
+                    item.getManualOverride() != null ? item.getManualOverride() : false
                 ))
                 .toArray(org.jooq.Query[]::new)
         ).execute();
@@ -91,16 +100,27 @@ public class PricingSessionLineItemRepository {
         item.setTotalCost(record.get(PRICING_SESSION_LINE_ITEMS.TOTAL_COST));
         item.setAmountModified(record.get(PRICING_SESSION_LINE_ITEMS.AMOUNT_MODIFIED));
 
-        // Historical pricing fields (after migration 014 and jOOQ regeneration)
-        // Using field name strings until jOOQ code is regenerated
+        // Historical pricing fields - load all available fields
         try {
             item.setLastCost(record.get("last_cost", java.math.BigDecimal.class));
             item.setLastUnitSellPrice(record.get("last_unit_sell_price", java.math.BigDecimal.class));
+            item.setLastAmount(record.get("last_amount", java.math.BigDecimal.class));
+            item.setLastGrossProfit(record.get("last_gross_profit", java.math.BigDecimal.class));
             item.setIncomingCost(record.get("incoming_cost", java.math.BigDecimal.class));
             item.setPrimaryGroup(record.get("primary_group", String.class));
         } catch (Exception e) {
-            // Columns don't exist yet - migration 014 hasn't run
-            // This is fine, fields will remain null
+            // Historical fields might not exist in older sessions - this is fine
+        }
+
+        // New pricing fields - load all available fields
+        try {
+            item.setNewUnitSellPrice(record.get("new_unit_sell_price", java.math.BigDecimal.class));
+            item.setNewAmount(record.get("new_amount", java.math.BigDecimal.class));
+            item.setNewGrossProfit(record.get("new_gross_profit", java.math.BigDecimal.class));
+            item.setAppliedRule(record.get("applied_rule", String.class));
+            item.setManualOverride(record.get("manual_override", Boolean.class));
+        } catch (Exception e) {
+            // New pricing fields might not exist in older sessions - this is fine
         }
 
         return item;

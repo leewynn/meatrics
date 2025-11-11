@@ -44,7 +44,8 @@ import org.jooq.impl.TableImpl;
 
 
 /**
- * Dynamic pricing rules for calculating sell prices based on conditions
+ * Dynamic pricing rules for calculating sell prices with layered multi-rule
+ * support
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class PricingRule extends TableImpl<PricingRuleRecord> {
@@ -71,9 +72,9 @@ public class PricingRule extends TableImpl<PricingRuleRecord> {
 
     /**
      * The column <code>public.pricing_rule.rule_name</code>. User-friendly name
-     * for the rule (e.g., "ABC Meats - Beef Premium")
+     * for the rule
      */
-    public final TableField<PricingRuleRecord, String> RULE_NAME = createField(DSL.name("rule_name"), SQLDataType.VARCHAR(255).nullable(false), this, "User-friendly name for the rule (e.g., \"ABC Meats - Beef Premium\")");
+    public final TableField<PricingRuleRecord, String> RULE_NAME = createField(DSL.name("rule_name"), SQLDataType.VARCHAR(255).nullable(false), this, "User-friendly name for the rule");
 
     /**
      * The column <code>public.pricing_rule.customer_code</code>. NULL for
@@ -95,28 +96,52 @@ public class PricingRule extends TableImpl<PricingRuleRecord> {
 
     /**
      * The column <code>public.pricing_rule.pricing_method</code>. Pricing
-     * calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE
+     * calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE,
+     * MAINTAIN_GP_PERCENT
      */
-    public final TableField<PricingRuleRecord, String> PRICING_METHOD = createField(DSL.name("pricing_method"), SQLDataType.VARCHAR(50).nullable(false), this, "Pricing calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE");
+    public final TableField<PricingRuleRecord, String> PRICING_METHOD = createField(DSL.name("pricing_method"), SQLDataType.VARCHAR(50).nullable(false), this, "Pricing calculation method: COST_PLUS_PERCENT, COST_PLUS_FIXED, FIXED_PRICE, MAINTAIN_GP_PERCENT");
 
     /**
-     * The column <code>public.pricing_rule.pricing_value</code>. Value for
-     * calculation (e.g., 1.20 for 20% markup, 5.00 for $5 markup). Can be NULL
-     * for MAINTAIN_GP_PERCENT (uses historical GP% only)
+     * The column <code>public.pricing_rule.pricing_value</code>. Pricing value
+     * with 6 decimal precision (multipliers, fixed amounts, GP percentages)
      */
-    public final TableField<PricingRuleRecord, BigDecimal> PRICING_VALUE = createField(DSL.name("pricing_value"), SQLDataType.NUMERIC(10, 4), this, "Value for calculation (e.g., 1.20 for 20% markup, 5.00 for $5 markup). Can be NULL for MAINTAIN_GP_PERCENT (uses historical GP% only)");
+    public final TableField<PricingRuleRecord, BigDecimal> PRICING_VALUE = createField(DSL.name("pricing_value"), SQLDataType.NUMERIC(19, 6), this, "Pricing value with 6 decimal precision (multipliers, fixed amounts, GP percentages)");
 
     /**
      * The column <code>public.pricing_rule.priority</code>. Lower number =
-     * higher priority. First matching rule wins.
+     * higher priority. Used for sorting within same layer.
      */
-    public final TableField<PricingRuleRecord, Integer> PRIORITY = createField(DSL.name("priority"), SQLDataType.INTEGER.nullable(false), this, "Lower number = higher priority. First matching rule wins.");
+    public final TableField<PricingRuleRecord, Integer> PRIORITY = createField(DSL.name("priority"), SQLDataType.INTEGER.nullable(false), this, "Lower number = higher priority. Used for sorting within same layer.");
 
     /**
-     * The column <code>public.pricing_rule.is_active</code>. Whether this rule
-     * is currently active
+     * The column <code>public.pricing_rule.is_active</code>.
      */
-    public final TableField<PricingRuleRecord, Boolean> IS_ACTIVE = createField(DSL.name("is_active"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "Whether this rule is currently active");
+    public final TableField<PricingRuleRecord, Boolean> IS_ACTIVE = createField(DSL.name("is_active"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "");
+
+    /**
+     * The column <code>public.pricing_rule.rule_category</code>. Category/layer
+     * of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT,
+     * PROMOTIONAL
+     */
+    public final TableField<PricingRuleRecord, String> RULE_CATEGORY = createField(DSL.name("rule_category"), SQLDataType.VARCHAR(50).nullable(false).defaultValue(DSL.field(DSL.raw("'BASE_PRICE'::character varying"), SQLDataType.VARCHAR)), this, "Category/layer of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT, PROMOTIONAL");
+
+    /**
+     * The column <code>public.pricing_rule.layer_order</code>. Execution order
+     * within the same rule_category. Lower number executes first.
+     */
+    public final TableField<PricingRuleRecord, Integer> LAYER_ORDER = createField(DSL.name("layer_order"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "Execution order within the same rule_category. Lower number executes first.");
+
+    /**
+     * The column <code>public.pricing_rule.valid_from</code>. Date when this
+     * rule becomes active. NULL means always active.
+     */
+    public final TableField<PricingRuleRecord, LocalDate> VALID_FROM = createField(DSL.name("valid_from"), SQLDataType.LOCALDATE, this, "Date when this rule becomes active. NULL means always active.");
+
+    /**
+     * The column <code>public.pricing_rule.valid_to</code>. Date when this rule
+     * expires. NULL means never expires.
+     */
+    public final TableField<PricingRuleRecord, LocalDate> VALID_TO = createField(DSL.name("valid_to"), SQLDataType.LOCALDATE, this, "Date when this rule expires. NULL means never expires.");
 
     /**
      * The column <code>public.pricing_rule.created_at</code>.
@@ -128,41 +153,12 @@ public class PricingRule extends TableImpl<PricingRuleRecord> {
      */
     public final TableField<PricingRuleRecord, LocalDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "");
 
-    /**
-     * The column <code>public.pricing_rule.rule_category</code>. Category/layer
-     * of the pricing rule: BASE_PRICE (foundation layer), CUSTOMER_ADJUSTMENT
-     * (customer-specific modifications), PRODUCT_ADJUSTMENT (product-specific
-     * adjustments), PROMOTIONAL (time-bound promotions)
-     */
-    public final TableField<PricingRuleRecord, String> RULE_CATEGORY = createField(DSL.name("rule_category"), SQLDataType.VARCHAR(50).nullable(false).defaultValue(DSL.field(DSL.raw("'BASE_PRICE'::character varying"), SQLDataType.VARCHAR)), this, "Category/layer of the pricing rule: BASE_PRICE (foundation layer), CUSTOMER_ADJUSTMENT (customer-specific modifications), PRODUCT_ADJUSTMENT (product-specific adjustments), PROMOTIONAL (time-bound promotions)");
-
-    /**
-     * The column <code>public.pricing_rule.layer_order</code>. Execution order
-     * within the same rule_category. Lower number executes first. Used for
-     * fine-grained control when multiple rules in the same layer apply.
-     */
-    public final TableField<PricingRuleRecord, Integer> LAYER_ORDER = createField(DSL.name("layer_order"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "Execution order within the same rule_category. Lower number executes first. Used for fine-grained control when multiple rules in the same layer apply.");
-
-    /**
-     * The column <code>public.pricing_rule.valid_from</code>. Date when this
-     * rule becomes active. NULL means the rule is always active (no start date
-     * restriction). Used for scheduling price changes and promotions.
-     */
-    public final TableField<PricingRuleRecord, LocalDate> VALID_FROM = createField(DSL.name("valid_from"), SQLDataType.LOCALDATE, this, "Date when this rule becomes active. NULL means the rule is always active (no start date restriction). Used for scheduling price changes and promotions.");
-
-    /**
-     * The column <code>public.pricing_rule.valid_to</code>. Date when this rule
-     * expires. NULL means the rule never expires (no end date restriction).
-     * Used for time-bound promotions and seasonal pricing.
-     */
-    public final TableField<PricingRuleRecord, LocalDate> VALID_TO = createField(DSL.name("valid_to"), SQLDataType.LOCALDATE, this, "Date when this rule expires. NULL means the rule never expires (no end date restriction). Used for time-bound promotions and seasonal pricing.");
-
     private PricingRule(Name alias, Table<PricingRuleRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
 
     private PricingRule(Name alias, Table<PricingRuleRecord> aliased, Field<?>[] parameters, Condition where) {
-        super(alias, null, aliased, parameters, DSL.comment("Dynamic pricing rules for calculating sell prices based on conditions"), TableOptions.table(), where);
+        super(alias, null, aliased, parameters, DSL.comment("Dynamic pricing rules for calculating sell prices with layered multi-rule support"), TableOptions.table(), where);
     }
 
     /**

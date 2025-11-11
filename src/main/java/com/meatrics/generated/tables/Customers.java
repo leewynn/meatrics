@@ -35,8 +35,7 @@ import org.jooq.impl.TableImpl;
 
 
 /**
- * Customer master data. Customer-specific pricing is determined by existence of
- * pricing rules with matching customer_code.
+ * Customer master data with ratings for pricing analysis
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Customers extends TableImpl<CustomersRecord> {
@@ -73,9 +72,9 @@ public class Customers extends TableImpl<CustomersRecord> {
 
     /**
      * The column <code>public.customers.customer_rating</code>. Customer rating
-     * category (e.g., A, B, C) for pricing and analysis purposes
+     * category (e.g., A, B, C) for pricing and analysis
      */
-    public final TableField<CustomersRecord, String> CUSTOMER_RATING = createField(DSL.name("customer_rating"), SQLDataType.VARCHAR(50), this, "Customer rating category (e.g., A, B, C) for pricing and analysis purposes");
+    public final TableField<CustomersRecord, String> CUSTOMER_RATING = createField(DSL.name("customer_rating"), SQLDataType.VARCHAR(50), this, "Customer rating category (e.g., A, B, C) for pricing and analysis");
 
     /**
      * The column <code>public.customers.notes</code>.
@@ -97,7 +96,7 @@ public class Customers extends TableImpl<CustomersRecord> {
     }
 
     private Customers(Name alias, Table<CustomersRecord> aliased, Field<?>[] parameters, Condition where) {
-        super(alias, null, aliased, parameters, DSL.comment("Customer master data. Customer-specific pricing is determined by existence of pricing rules with matching customer_code."), TableOptions.table(), where);
+        super(alias, null, aliased, parameters, DSL.comment("Customer master data with ratings for pricing analysis"), TableOptions.table(), where);
     }
 
     /**
