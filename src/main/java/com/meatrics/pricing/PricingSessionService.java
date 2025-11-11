@@ -224,8 +224,6 @@ public class PricingSessionService {
         // Restore applied rules from comma-separated string
         // Fetch full PricingRule objects from database by name for detailed display
         String appliedRuleStr = item.getAppliedRule();
-        log.info("Restoring rules for product {}: appliedRule string = '{}'",
-                 item.getProductCode(), appliedRuleStr);
 
         if (appliedRuleStr != null && !appliedRuleStr.trim().isEmpty()) {
             String[] ruleNames = appliedRuleStr.split(",");
@@ -249,10 +247,7 @@ public class PricingSessionService {
             }
             if (!restoredRules.isEmpty()) {
                 groupedItem.setAppliedRules(restoredRules);
-                log.info("Set {} applied rules on grouped item", restoredRules.size());
             }
-        } else {
-            log.warn("No applied rules to restore for product {}", item.getProductCode());
         }
 
         // Manual override flag
