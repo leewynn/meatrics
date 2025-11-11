@@ -12,5 +12,6 @@
 node_modules/
 src/main/frontend/generated/
 vite.generated.ts
-/logs/
+logs/
 meatrics.log
+*.log
