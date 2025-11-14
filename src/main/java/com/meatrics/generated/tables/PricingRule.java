@@ -7,6 +7,7 @@ package com.meatrics.generated.tables;
 import com.meatrics.generated.Indexes;
 import com.meatrics.generated.Keys;
 import com.meatrics.generated.Public;
+import com.meatrics.generated.tables.PricingSessionAppliedRules.PricingSessionAppliedRulesPath;
 import com.meatrics.generated.tables.PricingSessionLineItems.PricingSessionLineItemsPath;
 import com.meatrics.generated.tables.records.PricingRuleRecord;
 
@@ -233,6 +234,19 @@ public class PricingRule extends TableImpl<PricingRuleRecord> {
     @Override
     public UniqueKey<PricingRuleRecord> getPrimaryKey() {
         return Keys.PRICING_RULE_PKEY;
+    }
+
+    private transient PricingSessionAppliedRulesPath _pricingSessionAppliedRules;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.pricing_session_applied_rules</code> table
+     */
+    public PricingSessionAppliedRulesPath pricingSessionAppliedRules() {
+        if (_pricingSessionAppliedRules == null)
+            _pricingSessionAppliedRules = new PricingSessionAppliedRulesPath(this, null, Keys.PRICING_SESSION_APPLIED_RULES__FK_APPLIED_RULES_RULE.getInverseKey());
+
+        return _pricingSessionAppliedRules;
     }
 
     private transient PricingSessionLineItemsPath _pricingSessionLineItems;

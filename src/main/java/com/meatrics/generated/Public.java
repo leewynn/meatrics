@@ -9,6 +9,7 @@ import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
 import com.meatrics.generated.tables.PricingRule;
+import com.meatrics.generated.tables.PricingSessionAppliedRules;
 import com.meatrics.generated.tables.PricingSessionLineItems;
 import com.meatrics.generated.tables.PricingSessions;
 import com.meatrics.generated.tables.ProductCosts;
@@ -65,6 +66,11 @@ public class Public extends SchemaImpl {
      * support
      */
     public final PricingRule PRICING_RULE = PricingRule.PRICING_RULE;
+
+    /**
+     * The table <code>public.pricing_session_applied_rules</code>.
+     */
+    public final PricingSessionAppliedRules PRICING_SESSION_APPLIED_RULES = PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES;
 
     /**
      * Line items within a pricing session, grouped by customer and product
@@ -128,6 +134,7 @@ public class Public extends SchemaImpl {
             ImportSummary.IMPORT_SUMMARY,
             ImportedLineItems.IMPORTED_LINE_ITEMS,
             PricingRule.PRICING_RULE,
+            PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES,
             PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS,
             PricingSessions.PRICING_SESSIONS,
             ProductCosts.PRODUCT_COSTS,

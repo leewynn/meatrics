@@ -7,4 +7,6 @@
 
     <include file="changes/001-initial-schema.sql" relativeToChangelogFile="true"/>
     <include file="changes/018-add-applied-rule-text-column.sql" relativeToChangelogFile="true"/>
+    <include file="changes/019-create-applied-rules-audit-table.sql" relativeToChangelogFile="true"/>
+    <include file="changes/020-drop-applied-rule-column.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

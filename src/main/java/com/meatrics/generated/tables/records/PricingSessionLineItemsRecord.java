@@ -386,24 +386,6 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
         return (Boolean) get(22);
     }
 
-    /**
-     * Setter for <code>public.pricing_session_line_items.applied_rule</code>.
-     * Comma-separated list of rule names that were applied to calculate this
-     * price
-     */
-    public void setAppliedRule(String value) {
-        set(23, value);
-    }
-
-    /**
-     * Getter for <code>public.pricing_session_line_items.applied_rule</code>.
-     * Comma-separated list of rule names that were applied to calculate this
-     * price
-     */
-    public String getAppliedRule() {
-        return (String) get(23);
-    }
-
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -427,7 +409,7 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
     /**
      * Create a detached, initialised PricingSessionLineItemsRecord
      */
-    public PricingSessionLineItemsRecord(Long id, Long sessionId, String customerCode, String customerName, String customerRating, String productCode, String productDescription, String primaryGroup, BigDecimal totalQuantity, BigDecimal totalAmount, BigDecimal originalAmount, BigDecimal totalCost, Boolean amountModified, BigDecimal lastCost, BigDecimal lastUnitSellPrice, BigDecimal lastAmount, BigDecimal lastGrossProfit, BigDecimal incomingCost, BigDecimal newUnitSellPrice, BigDecimal newAmount, BigDecimal newGrossProfit, Long appliedRuleId, Boolean manualOverride, String appliedRule) {
+    public PricingSessionLineItemsRecord(Long id, Long sessionId, String customerCode, String customerName, String customerRating, String productCode, String productDescription, String primaryGroup, BigDecimal totalQuantity, BigDecimal totalAmount, BigDecimal originalAmount, BigDecimal totalCost, Boolean amountModified, BigDecimal lastCost, BigDecimal lastUnitSellPrice, BigDecimal lastAmount, BigDecimal lastGrossProfit, BigDecimal incomingCost, BigDecimal newUnitSellPrice, BigDecimal newAmount, BigDecimal newGrossProfit, Long appliedRuleId, Boolean manualOverride) {
         super(PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS);
 
         setId(id);
@@ -453,7 +435,6 @@ public class PricingSessionLineItemsRecord extends UpdatableRecordImpl<PricingSe
         setNewGrossProfit(newGrossProfit);
         setAppliedRuleId(appliedRuleId);
         setManualOverride(manualOverride);
-        setAppliedRule(appliedRule);
         resetTouchedOnNotNull();
     }
 }

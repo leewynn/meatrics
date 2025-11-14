@@ -18,7 +18,7 @@
  *   <li>{@link com.meatrics.pricing.ImportedLineItem} - Raw data entity from Excel imports</li>
  *   <li>{@link com.meatrics.pricing.ImportSummary} - Tracks import metadata and status</li>
  *   <li>{@link com.meatrics.pricing.PricingImportService} - Orchestrates file uploads and imports</li>
- *   <li>{@link com.meatrics.pricing.ui.ImportPricingView} - User interface for file upload and import history</li>
+ *   <li>{@link com.meatrics.pricing.ui.importer.ImportPricingView} - User interface for file upload and import history</li>
  * </ul>
  *
  * <h2>Import Workflow</h2>

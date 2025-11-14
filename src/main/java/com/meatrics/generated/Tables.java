@@ -9,6 +9,7 @@ import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
 import com.meatrics.generated.tables.PricingRule;
+import com.meatrics.generated.tables.PricingSessionAppliedRules;
 import com.meatrics.generated.tables.PricingSessionLineItems;
 import com.meatrics.generated.tables.PricingSessions;
 import com.meatrics.generated.tables.ProductCosts;
@@ -50,6 +51,11 @@ public class Tables {
      * support
      */
     public static final PricingRule PRICING_RULE = PricingRule.PRICING_RULE;
+
+    /**
+     * The table <code>public.pricing_session_applied_rules</code>.
+     */
+    public static final PricingSessionAppliedRules PRICING_SESSION_APPLIED_RULES = PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES;
 
     /**
      * Line items within a pricing session, grouped by customer and product

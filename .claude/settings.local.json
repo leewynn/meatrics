@@ -17,7 +17,9 @@
       "Task(subagent_type:documentation-agent)",
       "Task(subagent_type:Explore)",
       "Task(subagent_type:Plan)",
-      "Task(subagent_type:general-purpose)"
+      "Task(subagent_type:general-purpose)",
+      "Bash(xargs:*)",
+      "Bash(done)"
     ],
     "deny": [
       "Bash(mvn:*)"

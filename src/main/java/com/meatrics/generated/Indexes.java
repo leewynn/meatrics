@@ -9,6 +9,7 @@ import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
 import com.meatrics.generated.tables.PricingRule;
+import com.meatrics.generated.tables.PricingSessionAppliedRules;
 import com.meatrics.generated.tables.PricingSessionLineItems;
 import com.meatrics.generated.tables.PricingSessions;
 import com.meatrics.generated.tables.ProductCosts;
@@ -29,6 +30,9 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index IDX_APPLIED_RULES_CATEGORY = Internal.createIndex(DSL.name("idx_applied_rules_category"), PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, new OrderField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.RULE_CATEGORY }, false);
+    public static final Index IDX_APPLIED_RULES_LINE_ITEM = Internal.createIndex(DSL.name("idx_applied_rules_line_item"), PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, new OrderField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.SESSION_LINE_ITEM_ID }, false);
+    public static final Index IDX_APPLIED_RULES_RULE_ID = Internal.createIndex(DSL.name("idx_applied_rules_rule_id"), PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, new OrderField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.RULE_ID }, false);
     public static final Index IDX_COST_IMPORT_SUMMARY_FILENAME = Internal.createIndex(DSL.name("idx_cost_import_summary_filename"), CostImportSummary.COST_IMPORT_SUMMARY, new OrderField[] { CostImportSummary.COST_IMPORT_SUMMARY.FILENAME }, false);
     public static final Index IDX_CUSTOMERS_CODE = Internal.createIndex(DSL.name("idx_customers_code"), Customers.CUSTOMERS, new OrderField[] { Customers.CUSTOMERS.CUSTOMER_CODE }, false);
     public static final Index IDX_IMPORT_SUMMARY_FILENAME = Internal.createIndex(DSL.name("idx_import_summary_filename"), ImportSummary.IMPORT_SUMMARY, new OrderField[] { ImportSummary.IMPORT_SUMMARY.FILENAME }, false);

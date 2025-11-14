@@ -1,7 +1,7 @@
 package com.meatrics.pricing.ui.component;
 
-import com.meatrics.pricing.Customer;
-import com.meatrics.pricing.CustomerRepository;
+import com.meatrics.pricing.customer.Customer;
+import com.meatrics.pricing.customer.CustomerRepository;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;

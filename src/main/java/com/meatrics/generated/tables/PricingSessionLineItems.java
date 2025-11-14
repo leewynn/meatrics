@@ -8,6 +8,7 @@ import com.meatrics.generated.Indexes;
 import com.meatrics.generated.Keys;
 import com.meatrics.generated.Public;
 import com.meatrics.generated.tables.PricingRule.PricingRulePath;
+import com.meatrics.generated.tables.PricingSessionAppliedRules.PricingSessionAppliedRulesPath;
 import com.meatrics.generated.tables.PricingSessions.PricingSessionsPath;
 import com.meatrics.generated.tables.records.PricingSessionLineItemsRecord;
 
@@ -198,13 +199,6 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
      */
     public final TableField<PricingSessionLineItemsRecord, Boolean> MANUAL_OVERRIDE = createField(DSL.name("manual_override"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "TRUE if user manually overrode the rule-calculated price");
 
-    /**
-     * The column <code>public.pricing_session_line_items.applied_rule</code>.
-     * Comma-separated list of rule names that were applied to calculate this
-     * price
-     */
-    public final TableField<PricingSessionLineItemsRecord, String> APPLIED_RULE = createField(DSL.name("applied_rule"), SQLDataType.CLOB, this, "Comma-separated list of rule names that were applied to calculate this price");
-
     private PricingSessionLineItems(Name alias, Table<PricingSessionLineItemsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -317,6 +311,19 @@ public class PricingSessionLineItems extends TableImpl<PricingSessionLineItemsRe
             _pricingSessions = new PricingSessionsPath(this, Keys.PRICING_SESSION_LINE_ITEMS__PRICING_SESSION_LINE_ITEMS_SESSION_ID_FKEY, null);
 
         return _pricingSessions;
+    }
+
+    private transient PricingSessionAppliedRulesPath _pricingSessionAppliedRules;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.pricing_session_applied_rules</code> table
+     */
+    public PricingSessionAppliedRulesPath pricingSessionAppliedRules() {
+        if (_pricingSessionAppliedRules == null)
+            _pricingSessionAppliedRules = new PricingSessionAppliedRulesPath(this, null, Keys.PRICING_SESSION_APPLIED_RULES__FK_APPLIED_RULES_LINE_ITEM.getInverseKey());
+
+        return _pricingSessionAppliedRules;
     }
 
     @Override
