@@ -240,12 +240,26 @@ public class PricingDataView extends AbstractGridView {
                 .setResizable(true)
                 .setSortable(true);
 
-        grid.addColumn(ImportedLineItem::getQuantity)
+        grid.addColumn(item -> {
+                    BigDecimal qty = item.getQuantity();
+                    if (qty == null) {
+                        return "0.00";
+                    }
+                    return String.format("%.2f", qty);
+                })
                 .setHeader("Quantity")
                 .setKey("quantity")
                 .setAutoWidth(true)
                 .setResizable(true)
-                .setSortable(true);
+                .setSortable(true)
+                .setComparator((item1, item2) -> {
+                    BigDecimal val1 = item1.getQuantity();
+                    BigDecimal val2 = item2.getQuantity();
+                    if (val1 == null && val2 == null) return 0;
+                    if (val1 == null) return -1;
+                    if (val2 == null) return 1;
+                    return val1.compareTo(val2);
+                });
 
         grid.addColumn(ImportedLineItem::getCostFormatted)
                 .setHeader("Cost")

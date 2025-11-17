@@ -524,18 +524,141 @@ public class PricingRuleDialog extends Dialog {
         ruleDesc.getStyle().set("font-weight", "bold");
         content.add(ruleDesc);
 
+        // Show scope indicator - customer-specific vs standard
+        Div scopeIndicator = new Div();
+        scopeIndicator.getStyle()
+            .set("background-color", "var(--lumo-contrast-5pct)")
+            .set("border-radius", "var(--lumo-border-radius-m)")
+            .set("padding", "var(--lumo-space-m)")
+            .set("margin-top", "var(--lumo-space-s)")
+            .set("margin-bottom", "var(--lumo-space-m)");
+
+        if (testRule.getCustomerCode() != null && !testRule.getCustomerCode().isEmpty()) {
+            // Customer-specific rule
+            Span scopeLabel = new Span("Scope: ");
+            scopeLabel.getStyle().set("font-weight", "600");
+
+            Span scopeText = new Span("Customer-Specific");
+            scopeText.getStyle()
+                .set("color", "var(--lumo-primary-text-color)")
+                .set("font-weight", "600");
+
+            Div scopeLine = new Div(scopeLabel, scopeText);
+
+            Span customerInfo = new Span("This rule will ONLY apply to customer: " + testRule.getCustomerCode());
+            customerInfo.getStyle()
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "var(--lumo-font-size-s)")
+                .set("display", "block")
+                .set("margin-top", "var(--lumo-space-xs)");
+
+            scopeIndicator.add(scopeLine, customerInfo);
+        } else {
+            // Standard rule - applies to all customers
+            Span scopeLabel = new Span("Scope: ");
+            scopeLabel.getStyle().set("font-weight", "600");
+
+            Span scopeText = new Span("Standard (All Customers)");
+            scopeText.getStyle()
+                .set("color", "var(--lumo-success-text-color)")
+                .set("font-weight", "600");
+
+            Div scopeLine = new Div(scopeLabel, scopeText);
+
+            Span customerInfo = new Span("This rule will apply to ALL customers who purchase the matching products");
+            customerInfo.getStyle()
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "var(--lumo-font-size-s)")
+                .set("display", "block")
+                .set("margin-top", "var(--lumo-space-xs)");
+
+            scopeIndicator.add(scopeLine, customerInfo);
+        }
+        content.add(scopeIndicator);
+
         if (result.isAllProducts()) {
             // For ALL_PRODUCTS rules, just show count
-            Span countMessage = new Span(
-                    "This rule will apply to ALL products (" + result.getTotalMatchCount() + " products in system)");
+            String productMessage = result.getTotalMatchCount() + " products in system";
+            if (testRule.getCustomerCode() != null && !testRule.getCustomerCode().isEmpty()) {
+                productMessage = "All products when purchased by customer " + testRule.getCustomerCode() +
+                    " (" + result.getTotalMatchCount() + " products in system)";
+            }
+            Span countMessage = new Span(productMessage);
             countMessage.getStyle().set("color", "var(--lumo-secondary-text-color)");
             content.add(countMessage);
         } else {
             // Show grid with matching products and calculated prices
-            H3 matchHeader = new H3(result.getTotalMatchCount() + " matching products");
+            String matchMessage = result.getTotalMatchCount() + " matching product(s)";
+            if (testRule.getCustomerCode() != null && !testRule.getCustomerCode().isEmpty()) {
+                matchMessage += " (when purchased by customer " + testRule.getCustomerCode() + ")";
+            }
+            H3 matchHeader = new H3(matchMessage);
             content.add(matchHeader);
 
-            if (result.getTotalMatchCount() > 0) {
+            if (result.getTotalMatchCount() == 0) {
+                // Warning: No products match
+                Div warningBox = new Div();
+                warningBox.getStyle()
+                    .set("background-color", "var(--lumo-error-color-10pct)")
+                    .set("border-left", "4px solid var(--lumo-error-color)")
+                    .set("border-radius", "var(--lumo-border-radius-m)")
+                    .set("padding", "var(--lumo-space-m)")
+                    .set("margin-top", "var(--lumo-space-m)");
+
+                Span warningIcon = new Span("⚠️ ");
+                warningIcon.getStyle().set("font-size", "1.2rem");
+
+                Span warningText = new Span("No products match this rule. This rule will have no effect.");
+                warningText.getStyle().set("font-weight", "600");
+
+                Div warningLine = new Div(warningIcon, warningText);
+
+                Span suggestion = new Span("Check your category or product code selection.");
+                suggestion.getStyle()
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("font-size", "var(--lumo-font-size-s)")
+                    .set("display", "block")
+                    .set("margin-top", "var(--lumo-space-xs)");
+
+                warningBox.add(warningLine, suggestion);
+                content.add(warningBox);
+            } else if (result.getTotalMatchCount() > 0) {
+                // Add layering context for non-base-price rules
+                if (testRule.getRuleCategory() != null && testRule.getRuleCategory() != RuleCategory.BASE_PRICE) {
+                    Div layerContext = new Div();
+                    layerContext.getStyle()
+                        .set("background-color", "var(--lumo-primary-color-10pct)")
+                        .set("border-left", "4px solid var(--lumo-primary-color)")
+                        .set("border-radius", "var(--lumo-border-radius-m)")
+                        .set("padding", "var(--lumo-space-m)")
+                        .set("margin-top", "var(--lumo-space-m)")
+                        .set("margin-bottom", "var(--lumo-space-m)");
+
+                    Span layerTitle = new Span("Layer: " + testRule.getRuleCategory().getDisplayName());
+                    layerTitle.getStyle()
+                        .set("font-weight", "600")
+                        .set("display", "block");
+
+                    Span layerInfo = new Span("This rule applies AFTER base pricing.");
+                    layerInfo.getStyle()
+                        .set("color", "var(--lumo-secondary-text-color)")
+                        .set("font-size", "var(--lumo-font-size-s)")
+                        .set("display", "block")
+                        .set("margin-top", "var(--lumo-space-xs)");
+
+                    // Show example calculation chain
+                    Span exampleChain = new Span(getLayeringExample(testRule));
+                    exampleChain.getStyle()
+                        .set("font-family", "monospace")
+                        .set("font-size", "var(--lumo-font-size-s)")
+                        .set("display", "block")
+                        .set("margin-top", "var(--lumo-space-xs)")
+                        .set("color", "var(--lumo-body-text-color)");
+
+                    layerContext.add(layerTitle, layerInfo, exampleChain);
+                    content.add(layerContext);
+                }
+
                 Grid<PricePreview> previewGrid = new Grid<>(PricePreview.class, false);
                 previewGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
                 previewGrid.setHeight("400px");
@@ -556,6 +679,39 @@ public class PricingRuleDialog extends Dialog {
                 previewGrid.addColumn(preview -> String.format("$%.2f", preview.getCalculatedPrice()))
                         .setHeader("Calculated Price")
                         .setAutoWidth(true);
+
+                // Add GP% column
+                previewGrid.addColumn(preview -> {
+                    java.math.BigDecimal price = preview.getCalculatedPrice();
+                    java.math.BigDecimal cost = preview.getCost();
+
+                    if (cost.compareTo(java.math.BigDecimal.ZERO) == 0) {
+                        return "N/A";
+                    }
+
+                    if (price.compareTo(java.math.BigDecimal.ZERO) == 0) {
+                        return "0.0%";
+                    }
+
+                    // GP% = (Price - Cost) / Price * 100
+                    java.math.BigDecimal gpAmount = price.subtract(cost);
+                    java.math.BigDecimal gpPercent = gpAmount.divide(price, 4, java.math.RoundingMode.HALF_UP)
+                        .multiply(new java.math.BigDecimal("100"));
+
+                    return String.format("%.1f%%", gpPercent);
+                })
+                .setHeader("GP%")
+                .setAutoWidth(true);
+
+                // Add GP$ column
+                previewGrid.addColumn(preview -> {
+                    java.math.BigDecimal price = preview.getCalculatedPrice();
+                    java.math.BigDecimal cost = preview.getCost();
+                    java.math.BigDecimal gpAmount = price.subtract(cost);
+                    return String.format("$%.2f", gpAmount);
+                })
+                .setHeader("GP$")
+                .setAutoWidth(true);
 
                 previewGrid.setItems(result.getPreviews());
                 content.add(previewGrid);
@@ -683,5 +839,92 @@ public class PricingRuleDialog extends Dialog {
     private void showErrorNotification(String message) {
         Notification notification = Notification.show(message, 5000, Notification.Position.BOTTOM_START);
         notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+
+    /**
+     * Generate example calculation chain showing how this rule fits into the layering system
+     */
+    private String getLayeringExample(PricingRule rule) {
+        String method = rule.getPricingMethod();
+        BigDecimal value = rule.getPricingValue();
+        RuleCategory category = rule.getRuleCategory();
+
+        // Example base cost
+        BigDecimal exampleCost = new BigDecimal("10.00");
+        BigDecimal basePrice = new BigDecimal("12.00"); // Assume +20% base markup
+
+        StringBuilder example = new StringBuilder();
+        example.append("Example: Cost $10.00\n");
+        example.append("→ Base Price (+20%): $12.00\n");
+
+        // Show where this rule applies in the chain
+        if (category == RuleCategory.CUSTOMER_ADJUSTMENT) {
+            example.append("→ YOUR RULE (");
+            example.append(formatRuleForExample(method, value));
+            example.append("): ");
+            BigDecimal result = applyExampleRule(basePrice, method, value);
+            example.append(String.format("$%.2f", result));
+        } else if (category == RuleCategory.PRODUCT_ADJUSTMENT) {
+            example.append("→ Customer Adjustment (if any): $11.40\n");
+            example.append("→ YOUR RULE (");
+            example.append(formatRuleForExample(method, value));
+            example.append("): ");
+            BigDecimal result = applyExampleRule(new BigDecimal("11.40"), method, value);
+            example.append(String.format("$%.2f", result));
+        } else if (category == RuleCategory.PROMOTIONAL) {
+            example.append("→ Customer Adjustment (if any): $11.40\n");
+            example.append("→ Product Adjustment (if any): $13.40\n");
+            example.append("→ YOUR RULE (");
+            example.append(formatRuleForExample(method, value));
+            example.append("): ");
+            BigDecimal result = applyExampleRule(new BigDecimal("13.40"), method, value);
+            example.append(String.format("$%.2f", result));
+        }
+
+        return example.toString();
+    }
+
+    /**
+     * Format rule for example display
+     */
+    private String formatRuleForExample(String method, BigDecimal value) {
+        if (value == null) return method;
+
+        switch (method) {
+            case "COST_PLUS_PERCENT":
+                BigDecimal percent = value.subtract(BigDecimal.ONE).multiply(new BigDecimal("100"));
+                String sign = percent.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "";
+                return String.format("%s%.0f%%", sign, percent);
+            case "COST_PLUS_FIXED":
+                return String.format("+$%.2f", value);
+            case "FIXED_PRICE":
+                return String.format("Fixed $%.2f", value);
+            case "MAINTAIN_GP_PERCENT":
+                BigDecimal gpPercent = value.multiply(new BigDecimal("100"));
+                return String.format("Maintain %.0f%% GP", gpPercent);
+            default:
+                return method;
+        }
+    }
+
+    /**
+     * Apply rule to a price for example calculation
+     */
+    private BigDecimal applyExampleRule(BigDecimal currentPrice, String method, BigDecimal value) {
+        if (value == null) return currentPrice;
+
+        switch (method) {
+            case "COST_PLUS_PERCENT":
+                return currentPrice.multiply(value).setScale(2, java.math.RoundingMode.HALF_UP);
+            case "COST_PLUS_FIXED":
+                return currentPrice.add(value).setScale(2, java.math.RoundingMode.HALF_UP);
+            case "FIXED_PRICE":
+                return value.setScale(2, java.math.RoundingMode.HALF_UP);
+            case "MAINTAIN_GP_PERCENT":
+                // For example purposes, just show a reasonable price
+                return new BigDecimal("12.50").setScale(2, java.math.RoundingMode.HALF_UP);
+            default:
+                return currentPrice;
+        }
     }
 }

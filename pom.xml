@@ -312,6 +312,10 @@
                                     <goal>build-frontend</goal>
                                 </goals>
                                 <phase>compile</phase>
+                                <configuration>
+                                    <!-- Force production bundle rebuild to avoid stale cache issues -->
+                                    <forceProductionBuild>true</forceProductionBuild>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
