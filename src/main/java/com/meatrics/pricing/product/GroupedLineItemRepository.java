@@ -92,6 +92,80 @@ public class GroupedLineItemRepository {
     }
 
     /**
+     * Get grouped line items for a specific customer by customer_id
+     * Used for group pricing to load products from member companies
+     */
+    public List<GroupedLineItem> findByCustomerId(Long customerId) {
+        var records = dsl.select(
+                V_GROUPED_LINE_ITEMS.CUSTOMER_CODE,
+                V_GROUPED_LINE_ITEMS.CUSTOMER_NAME,
+                V_GROUPED_LINE_ITEMS.PRODUCT_CODE,
+                V_GROUPED_LINE_ITEMS.PRODUCT_DESCRIPTION,
+                V_GROUPED_LINE_ITEMS.CATEGORY,
+                V_GROUPED_LINE_ITEMS.UNIT,
+                V_GROUPED_LINE_ITEMS.TOTAL_QUANTITY,
+                V_GROUPED_LINE_ITEMS.TOTAL_AMOUNT,
+                V_GROUPED_LINE_ITEMS.TOTAL_COST,
+                V_GROUPED_LINE_ITEMS.LAST_PRICE,
+                V_GROUPED_LINE_ITEMS.CURRENT_COST,
+                V_GROUPED_LINE_ITEMS.CUSTOMER_ID,
+                CUSTOMERS.CUSTOMER_RATING
+        )
+        .from(V_GROUPED_LINE_ITEMS)
+        .leftJoin(CUSTOMERS).on(V_GROUPED_LINE_ITEMS.CUSTOMER_ID.eq(CUSTOMERS.CUSTOMER_ID))
+        .where(V_GROUPED_LINE_ITEMS.CUSTOMER_ID.eq(customerId))
+        .fetch();
+
+        return records.stream()
+                .map(this::mapViewRecordToGroupedLineItem)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Map view record to GroupedLineItem entity
+     */
+    private GroupedLineItem mapViewRecordToGroupedLineItem(Record record) {
+        GroupedLineItem item = new GroupedLineItem();
+
+        item.setCustomerCode(record.get(V_GROUPED_LINE_ITEMS.CUSTOMER_CODE));
+        item.setCustomerName(record.get(V_GROUPED_LINE_ITEMS.CUSTOMER_NAME));
+        item.setProductCode(record.get(V_GROUPED_LINE_ITEMS.PRODUCT_CODE));
+        item.setProductDescription(record.get(V_GROUPED_LINE_ITEMS.PRODUCT_DESCRIPTION));
+        item.setPrimaryGroup(record.get(V_GROUPED_LINE_ITEMS.CATEGORY));
+
+        BigDecimal totalQty = record.get(V_GROUPED_LINE_ITEMS.TOTAL_QUANTITY);
+        BigDecimal totalAmt = record.get(V_GROUPED_LINE_ITEMS.TOTAL_AMOUNT);
+        BigDecimal totalCost = record.get(V_GROUPED_LINE_ITEMS.TOTAL_COST);
+
+        item.setTotalQuantity(totalQty);
+        item.setTotalAmount(totalAmt);
+        item.setTotalCost(totalCost);
+
+        // Historical/last price data
+        BigDecimal lastPrice = record.get(V_GROUPED_LINE_ITEMS.LAST_PRICE);
+        item.setLastUnitSellPrice(lastPrice);
+        item.setLastAmount(totalAmt);
+
+        // Calculate last cost (use 6 decimals precision)
+        if (totalCost != null && totalQty != null && totalQty.compareTo(BigDecimal.ZERO) > 0) {
+            item.setLastCost(totalCost.divide(totalQty, 6, RoundingMode.HALF_UP));
+        }
+
+        // Last gross profit
+        if (totalAmt != null && totalCost != null) {
+            item.setLastGrossProfit(totalAmt.subtract(totalCost));
+        }
+
+        // Incoming cost from product_costs
+        item.setIncomingCost(record.get(V_GROUPED_LINE_ITEMS.CURRENT_COST));
+
+        // Customer rating
+        item.setCustomerRating(record.get(CUSTOMERS.CUSTOMER_RATING));
+
+        return item;
+    }
+
+    /**
      * Map database record to GroupedLineItem entity with all fields
      */
     private GroupedLineItem mapToGroupedLineItem(Record record) {
@@ -112,15 +186,15 @@ public class GroupedLineItemRepository {
         item.setTotalAmount(totalAmt);
         item.setTotalCost(totalCost);
 
-        // Historical data - populate from aggregated values
+        // Historical data - populate from aggregated values (use 6 decimals precision)
         // Last cost = average unit cost from historical data
         if (totalCost != null && totalQty != null && totalQty.compareTo(BigDecimal.ZERO) > 0) {
-            item.setLastCost(totalCost.divide(totalQty, 2, RoundingMode.HALF_UP));
+            item.setLastCost(totalCost.divide(totalQty, 6, RoundingMode.HALF_UP));
         }
 
         // Last unit sell price = average sell price from historical data
         if (totalAmt != null && totalQty != null && totalQty.compareTo(BigDecimal.ZERO) > 0) {
-            item.setLastUnitSellPrice(totalAmt.divide(totalQty, 2, RoundingMode.HALF_UP));
+            item.setLastUnitSellPrice(totalAmt.divide(totalQty, 6, RoundingMode.HALF_UP));
         }
 
         item.setLastAmount(totalAmt);
@@ -140,5 +214,27 @@ public class GroupedLineItemRepository {
         item.setPrimaryGroup(record.get(PRODUCT_COSTS.PRIMARY_GROUP));
 
         return item;
+    }
+
+    /**
+     * Get distinct product categories for dropdown filtering
+     */
+    public List<String> findDistinctCategories() {
+        return dsl.selectDistinct(PRODUCT_COSTS.PRIMARY_GROUP)
+                .from(PRODUCT_COSTS)
+                .where(PRODUCT_COSTS.PRIMARY_GROUP.isNotNull())
+                .orderBy(PRODUCT_COSTS.PRIMARY_GROUP)
+                .fetch(PRODUCT_COSTS.PRIMARY_GROUP);
+    }
+
+    /**
+     * Get distinct product codes for dropdown filtering
+     */
+    public List<String> findDistinctProductCodes() {
+        return dsl.selectDistinct(PRODUCT_COSTS.PRODUCT_CODE)
+                .from(PRODUCT_COSTS)
+                .where(PRODUCT_COSTS.PRODUCT_CODE.isNotNull())
+                .orderBy(PRODUCT_COSTS.PRODUCT_CODE)
+                .fetch(PRODUCT_COSTS.PRODUCT_CODE);
     }
 }

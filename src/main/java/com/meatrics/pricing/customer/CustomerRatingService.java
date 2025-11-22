@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service for calculating customer ratings using different algorithms
@@ -34,9 +33,7 @@ public class CustomerRatingService {
      */
     public CustomerRatingResult calculateRatings(String customerCode) {
         // Get all line items for this customer
-        List<ImportedLineItem> items = importedLineItemRepository.findAll().stream()
-                .filter(item -> customerCode.equals(item.getCustomerCode()))
-                .toList();
+        List<ImportedLineItem> items = importedLineItemRepository.findByCustomerCode(customerCode);
 
         if (items.isEmpty()) {
             return new CustomerRatingResult(0, 0, 0);
@@ -91,8 +88,8 @@ public class CustomerRatingService {
      * This addresses the zero-multiplication problem
      */
     private int calculateModifiedRating(BigDecimal amount, BigDecimal gpPercentage) {
-        // amount / 1000
-        BigDecimal amountPart = amount.divide(new BigDecimal("1000"), 2, RoundingMode.HALF_UP);
+        // amount / 1000 (use higher precision for intermediate calculation)
+        BigDecimal amountPart = amount.divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
 
         // GP% * 10
         BigDecimal gpPart = gpPercentage.multiply(new BigDecimal("10"));

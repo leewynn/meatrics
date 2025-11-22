@@ -5,10 +5,8 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.meatrics.generated.Tables.PRICING_RULE;
 
@@ -26,11 +24,11 @@ public class PricingRuleRepository {
     }
 
     /**
-     * Find all pricing rules ordered by priority
+     * Find all pricing rules ordered by execution order
      */
     public List<PricingRule> findAll() {
         return dsl.selectFrom(PRICING_RULE)
-                .orderBy(PRICING_RULE.PRIORITY.asc(), PRICING_RULE.ID.asc())
+                .orderBy(PRICING_RULE.EXECUTION_ORDER.asc(), PRICING_RULE.ID.asc())
                 .fetch(this::mapToPricingRule);
     }
 
@@ -55,33 +53,33 @@ public class PricingRuleRepository {
     }
 
     /**
-     * Find active rules for a specific customer, sorted by priority ascending.
+     * Find active rules for a specific customer, sorted by execution order ascending.
      * Returns customer-specific rules only (where customer_code = customerCode).
      */
     public List<PricingRule> findByCustomerCode(String customerCode) {
         return dsl.selectFrom(PRICING_RULE)
                 .where(PRICING_RULE.CUSTOMER_CODE.eq(customerCode))
                 .and(PRICING_RULE.IS_ACTIVE.eq(true))
-                .orderBy(PRICING_RULE.PRIORITY.asc(), PRICING_RULE.ID.asc())
+                .orderBy(PRICING_RULE.EXECUTION_ORDER.asc(), PRICING_RULE.ID.asc())
                 .fetch(this::mapToPricingRule);
     }
 
     /**
-     * Find active standard rules (where customer_code IS NULL), sorted by priority ascending.
+     * Find active standard rules (where customer_code IS NULL), sorted by execution order ascending.
      * These rules apply to all customers as fallback.
      */
     public List<PricingRule> findStandardRules() {
         return dsl.selectFrom(PRICING_RULE)
                 .where(PRICING_RULE.CUSTOMER_CODE.isNull())
                 .and(PRICING_RULE.IS_ACTIVE.eq(true))
-                .orderBy(PRICING_RULE.PRIORITY.asc(), PRICING_RULE.ID.asc())
+                .orderBy(PRICING_RULE.EXECUTION_ORDER.asc(), PRICING_RULE.ID.asc())
                 .fetch(this::mapToPricingRule);
     }
 
     /**
      * Find applicable rules for a customer.
      * Returns both customer-specific and standard rules.
-     * Results are sorted by priority ascending for first-match-wins evaluation.
+     * Results are sorted by execution order ascending.
      */
     public List<PricingRule> findApplicableRules(String customerCode) {
         // Include both customer-specific and standard rules
@@ -91,58 +89,8 @@ public class PricingRuleRepository {
                     PRICING_RULE.CUSTOMER_CODE.isNull()  // Standard rules
                     .or(PRICING_RULE.CUSTOMER_CODE.eq(customerCode))  // Customer-specific rules
                 )
-                .orderBy(PRICING_RULE.PRIORITY.asc(), PRICING_RULE.ID.asc())
+                .orderBy(PRICING_RULE.EXECUTION_ORDER.asc(), PRICING_RULE.ID.asc())
                 .fetch(this::mapToPricingRule);
-    }
-
-    /**
-     * Find all active rules in a specific category, ordered by layer_order.
-     * Note: Since jOOQ code needs regeneration, this uses in-memory filtering.
-     * After jOOQ regeneration, replace with database-level filtering.
-     *
-     * @param ruleCategory The category to filter by
-     * @return List of rules in that category, ordered by layer_order ASC
-     */
-    public List<PricingRule> findByRuleCategoryOrderByLayerOrderAsc(RuleCategory ruleCategory) {
-        // Temporary implementation using in-memory filtering until jOOQ is regenerated
-        return findAll().stream()
-                .filter(rule -> rule.getRuleCategory() != null && rule.getRuleCategory().equals(ruleCategory))
-                .filter(rule -> Boolean.TRUE.equals(rule.getIsActive()))
-                .sorted(Comparator.comparing(PricingRule::getLayerOrder, Comparator.nullsLast(Comparator.naturalOrder())))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Find active rules for a customer in a specific category.
-     *
-     * @param customerCode Customer code
-     * @param ruleCategory Category to filter by
-     * @return List of matching rules ordered by layer_order
-     */
-    public List<PricingRule> findByCustomerCodeAndRuleCategoryOrderByLayerOrderAsc(String customerCode, RuleCategory ruleCategory) {
-        // Temporary implementation using in-memory filtering until jOOQ is regenerated
-        return findAll().stream()
-                .filter(rule -> customerCode.equals(rule.getCustomerCode()))
-                .filter(rule -> rule.getRuleCategory() != null && rule.getRuleCategory().equals(ruleCategory))
-                .filter(rule -> Boolean.TRUE.equals(rule.getIsActive()))
-                .sorted(Comparator.comparing(PricingRule::getLayerOrder, Comparator.nullsLast(Comparator.naturalOrder())))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Find standard (non-customer-specific) active rules in a category.
-     *
-     * @param ruleCategory Category to filter by
-     * @return List of standard rules ordered by layer_order
-     */
-    public List<PricingRule> findByCustomerCodeIsNullAndRuleCategoryOrderByLayerOrderAsc(RuleCategory ruleCategory) {
-        // Temporary implementation using in-memory filtering until jOOQ is regenerated
-        return findAll().stream()
-                .filter(rule -> rule.getCustomerCode() == null)
-                .filter(rule -> rule.getRuleCategory() != null && rule.getRuleCategory().equals(ruleCategory))
-                .filter(rule -> Boolean.TRUE.equals(rule.getIsActive()))
-                .sorted(Comparator.comparing(PricingRule::getLayerOrder, Comparator.nullsLast(Comparator.naturalOrder())))
-                .collect(Collectors.toList());
     }
 
     /**
@@ -153,32 +101,15 @@ public class PricingRuleRepository {
      * - is_active = true
      *
      * @param date The date to check
-     * @return List of rules active on that date
+     * @return List of rules active on that date, ordered by execution order
      */
     public List<PricingRule> findActiveRulesOnDate(LocalDate date) {
-        // Temporary implementation using in-memory filtering until jOOQ is regenerated
-        return findAll().stream()
-                .filter(rule -> Boolean.TRUE.equals(rule.getIsActive()))
-                .filter(rule -> rule.isValidOnDate(date))
-                .sorted(Comparator.comparing(PricingRule::getPriority))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Find active rules in a specific category that are valid on a date.
-     *
-     * @param ruleCategory The category to filter by
-     * @param date The date to check validity
-     * @return List of rules in category, active on date
-     */
-    public List<PricingRule> findByRuleCategoryAndActiveOnDate(RuleCategory ruleCategory, LocalDate date) {
-        // Temporary implementation using in-memory filtering until jOOQ is regenerated
-        return findAll().stream()
-                .filter(rule -> rule.getRuleCategory() != null && rule.getRuleCategory().equals(ruleCategory))
-                .filter(rule -> Boolean.TRUE.equals(rule.getIsActive()))
-                .filter(rule -> rule.isValidOnDate(date))
-                .sorted(Comparator.comparing(PricingRule::getLayerOrder, Comparator.nullsLast(Comparator.naturalOrder())))
-                .collect(Collectors.toList());
+        return dsl.selectFrom(PRICING_RULE)
+                .where(PRICING_RULE.IS_ACTIVE.eq(true))
+                .and(PRICING_RULE.VALID_FROM.isNull().or(PRICING_RULE.VALID_FROM.lessOrEqual(date)))
+                .and(PRICING_RULE.VALID_TO.isNull().or(PRICING_RULE.VALID_TO.greaterOrEqual(date)))
+                .orderBy(PRICING_RULE.EXECUTION_ORDER.asc(), PRICING_RULE.ID.asc())
+                .fetch(this::mapToPricingRule);
     }
 
     /**
@@ -192,15 +123,10 @@ public class PricingRuleRepository {
                 rule.setCreatedAt(LocalDateTime.now());
             }
 
-            // Set defaults for new fields if not provided
-            if (rule.getRuleCategory() == null) {
-                rule.setRuleCategory(RuleCategory.BASE_PRICE);
+            // Set default execution order if not provided
+            if (rule.getExecutionOrder() == null) {
+                rule.setExecutionOrder(1);
             }
-            if (rule.getLayerOrder() == null) {
-                rule.setLayerOrder(rule.getPriority()); // Default to priority value
-            }
-
-            // TODO: After jOOQ regeneration, uncomment the new field setters below
             Long newId = dsl.insertInto(PRICING_RULE)
                     .set(PRICING_RULE.RULE_NAME, rule.getRuleName())
                     .set(PRICING_RULE.CUSTOMER_CODE, rule.getCustomerCode())
@@ -208,11 +134,9 @@ public class PricingRuleRepository {
                     .set(PRICING_RULE.CONDITION_VALUE, rule.getConditionValue())
                     .set(PRICING_RULE.PRICING_METHOD, rule.getPricingMethod())
                     .set(PRICING_RULE.PRICING_VALUE, rule.getPricingValue())
-                    .set(PRICING_RULE.PRIORITY, rule.getPriority())
                     .set(PRICING_RULE.IS_ACTIVE, rule.getIsActive() != null ? rule.getIsActive() : true)
                     .set(PRICING_RULE.CREATED_AT, rule.getCreatedAt())
-                    .set(PRICING_RULE.RULE_CATEGORY, rule.getRuleCategory() != null ? rule.getRuleCategory().name() : null)
-                    .set(PRICING_RULE.LAYER_ORDER, rule.getLayerOrder())
+                    .set(PRICING_RULE.EXECUTION_ORDER, rule.getExecutionOrder())
                     .set(PRICING_RULE.VALID_FROM, rule.getValidFrom())
                     .set(PRICING_RULE.VALID_TO, rule.getValidTo())
                     .returningResult(PRICING_RULE.ID)
@@ -232,11 +156,9 @@ public class PricingRuleRepository {
                     .set(PRICING_RULE.CONDITION_VALUE, rule.getConditionValue())
                     .set(PRICING_RULE.PRICING_METHOD, rule.getPricingMethod())
                     .set(PRICING_RULE.PRICING_VALUE, rule.getPricingValue())
-                    .set(PRICING_RULE.PRIORITY, rule.getPriority())
                     .set(PRICING_RULE.IS_ACTIVE, rule.getIsActive())
                     .set(PRICING_RULE.UPDATED_AT, rule.getUpdatedAt())
-                    .set(PRICING_RULE.RULE_CATEGORY, rule.getRuleCategory() != null ? rule.getRuleCategory().name() : null)
-                    .set(PRICING_RULE.LAYER_ORDER, rule.getLayerOrder())
+                    .set(PRICING_RULE.EXECUTION_ORDER, rule.getExecutionOrder())
                     .set(PRICING_RULE.VALID_FROM, rule.getValidFrom())
                     .set(PRICING_RULE.VALID_TO, rule.getValidTo())
                     .where(PRICING_RULE.ID.eq(rule.getId()))
@@ -285,15 +207,12 @@ public class PricingRuleRepository {
         rule.setConditionValue(record.get(PRICING_RULE.CONDITION_VALUE));
         rule.setPricingMethod(record.get(PRICING_RULE.PRICING_METHOD));
         rule.setPricingValue(record.get(PRICING_RULE.PRICING_VALUE));
-        rule.setPriority(record.get(PRICING_RULE.PRIORITY));
         rule.setIsActive(record.get(PRICING_RULE.IS_ACTIVE));
         rule.setCreatedAt(record.get(PRICING_RULE.CREATED_AT));
         rule.setUpdatedAt(record.get(PRICING_RULE.UPDATED_AT));
 
-        // Map new Phase 2 fields
-        String categoryStr = record.get(PRICING_RULE.RULE_CATEGORY);
-        rule.setRuleCategory(categoryStr != null ? RuleCategory.valueOf(categoryStr) : RuleCategory.BASE_PRICE);
-        rule.setLayerOrder(record.get(PRICING_RULE.LAYER_ORDER));
+        // Map execution order and date validity fields
+        rule.setExecutionOrder(record.get(PRICING_RULE.EXECUTION_ORDER));
         rule.setValidFrom(record.get(PRICING_RULE.VALID_FROM));
         rule.setValidTo(record.get(PRICING_RULE.VALID_TO));
 

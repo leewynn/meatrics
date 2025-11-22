@@ -5,11 +5,14 @@ package com.meatrics.generated;
 
 
 import com.meatrics.generated.tables.CostImportSummary;
+import com.meatrics.generated.tables.CustomerPricingRules;
+import com.meatrics.generated.tables.CustomerTags;
 import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
 import com.meatrics.generated.tables.PricingRule;
 import com.meatrics.generated.tables.PricingSessionAppliedRules;
+import com.meatrics.generated.tables.PricingSessionEntities;
 import com.meatrics.generated.tables.PricingSessionLineItems;
 import com.meatrics.generated.tables.PricingSessions;
 import com.meatrics.generated.tables.ProductCosts;
@@ -47,7 +50,19 @@ public class Public extends SchemaImpl {
     public final CostImportSummary COST_IMPORT_SUMMARY = CostImportSummary.COST_IMPORT_SUMMARY;
 
     /**
-     * Customer master data with ratings for pricing analysis
+     * Customer or group-specific pricing rules. Only groups (entity_type=GROUP)
+     * or standalone companies (parent_id IS NULL) should have rules.
+     */
+    public final CustomerPricingRules CUSTOMER_PRICING_RULES = CustomerPricingRules.CUSTOMER_PRICING_RULES;
+
+    /**
+     * Business classification tags for customers (PRICE_FILE_CUSTOMER,
+     * HIGH_VALUE, etc.)
+     */
+    public final CustomerTags CUSTOMER_TAGS = CustomerTags.CUSTOMER_TAGS;
+
+    /**
+     * Customer master data with group hierarchy support
      */
     public final Customers CUSTOMERS = Customers.CUSTOMERS;
 
@@ -62,15 +77,20 @@ public class Public extends SchemaImpl {
     public final ImportedLineItems IMPORTED_LINE_ITEMS = ImportedLineItems.IMPORTED_LINE_ITEMS;
 
     /**
-     * Dynamic pricing rules for calculating sell prices with layered multi-rule
-     * support
+     * Pricing rules with execution_order field for sequential rule application
      */
     public final PricingRule PRICING_RULE = PricingRule.PRICING_RULE;
 
     /**
-     * The table <code>public.pricing_session_applied_rules</code>.
+     * Immutable audit trail of all pricing rules applied to line items
      */
     public final PricingSessionAppliedRules PRICING_SESSION_APPLIED_RULES = PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES;
+
+    /**
+     * Maps pricing sessions to multiple customers/groups for multi-entity
+     * pricing
+     */
+    public final PricingSessionEntities PRICING_SESSION_ENTITIES = PricingSessionEntities.PRICING_SESSION_ENTITIES;
 
     /**
      * Line items within a pricing session, grouped by customer and product
@@ -94,7 +114,7 @@ public class Public extends SchemaImpl {
 
     /**
      * Aggregated line items grouped by customer and product for pricing
-     * sessions view
+     * sessions view. Includes category, unit, last_price, and current_cost.
      */
     public final VGroupedLineItems V_GROUPED_LINE_ITEMS = VGroupedLineItems.V_GROUPED_LINE_ITEMS;
 
@@ -130,11 +150,14 @@ public class Public extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             CostImportSummary.COST_IMPORT_SUMMARY,
+            CustomerPricingRules.CUSTOMER_PRICING_RULES,
+            CustomerTags.CUSTOMER_TAGS,
             Customers.CUSTOMERS,
             ImportSummary.IMPORT_SUMMARY,
             ImportedLineItems.IMPORTED_LINE_ITEMS,
             PricingRule.PRICING_RULE,
             PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES,
+            PricingSessionEntities.PRICING_SESSION_ENTITIES,
             PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS,
             PricingSessions.PRICING_SESSIONS,
             ProductCosts.PRODUCT_COSTS,

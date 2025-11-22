@@ -327,13 +327,6 @@ public class PricingSessionService {
                         rule.setRuleName(snapshot.getRuleName());
                         rule.setPricingMethod(snapshot.getPricingMethod());
                         rule.setPricingValue(snapshot.getPricingValue());
-                        if (snapshot.getRuleCategory() != null) {
-                            try {
-                                rule.setRuleCategory(com.meatrics.pricing.rule.RuleCategory.valueOf(snapshot.getRuleCategory()));
-                            } catch (IllegalArgumentException e) {
-                                log.warn("Invalid rule category in snapshot: {}", snapshot.getRuleCategory());
-                            }
-                        }
                         log.info("Reconstructed rule {} from snapshot (original rule not found)", snapshot.getRuleName());
                     }
 

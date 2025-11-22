@@ -5,11 +5,14 @@ package com.meatrics.generated;
 
 
 import com.meatrics.generated.tables.CostImportSummary;
+import com.meatrics.generated.tables.CustomerPricingRules;
+import com.meatrics.generated.tables.CustomerTags;
 import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
 import com.meatrics.generated.tables.PricingRule;
 import com.meatrics.generated.tables.PricingSessionAppliedRules;
+import com.meatrics.generated.tables.PricingSessionEntities;
 import com.meatrics.generated.tables.PricingSessionLineItems;
 import com.meatrics.generated.tables.PricingSessions;
 import com.meatrics.generated.tables.ProductCosts;
@@ -30,11 +33,15 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
-    public static final Index IDX_APPLIED_RULES_CATEGORY = Internal.createIndex(DSL.name("idx_applied_rules_category"), PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, new OrderField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.RULE_CATEGORY }, false);
     public static final Index IDX_APPLIED_RULES_LINE_ITEM = Internal.createIndex(DSL.name("idx_applied_rules_line_item"), PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, new OrderField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.SESSION_LINE_ITEM_ID }, false);
     public static final Index IDX_APPLIED_RULES_RULE_ID = Internal.createIndex(DSL.name("idx_applied_rules_rule_id"), PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, new OrderField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.RULE_ID }, false);
     public static final Index IDX_COST_IMPORT_SUMMARY_FILENAME = Internal.createIndex(DSL.name("idx_cost_import_summary_filename"), CostImportSummary.COST_IMPORT_SUMMARY, new OrderField[] { CostImportSummary.COST_IMPORT_SUMMARY.FILENAME }, false);
+    public static final Index IDX_CUSTOMER_PRICING_RULES_ACTIVE = Internal.createIndex(DSL.name("idx_customer_pricing_rules_active"), CustomerPricingRules.CUSTOMER_PRICING_RULES, new OrderField[] { CustomerPricingRules.CUSTOMER_PRICING_RULES.IS_ACTIVE }, false);
+    public static final Index IDX_CUSTOMER_PRICING_RULES_CUSTOMER_ID = Internal.createIndex(DSL.name("idx_customer_pricing_rules_customer_id"), CustomerPricingRules.CUSTOMER_PRICING_RULES, new OrderField[] { CustomerPricingRules.CUSTOMER_PRICING_RULES.CUSTOMER_ID }, false);
+    public static final Index IDX_CUSTOMER_TAGS_TAG = Internal.createIndex(DSL.name("idx_customer_tags_tag"), CustomerTags.CUSTOMER_TAGS, new OrderField[] { CustomerTags.CUSTOMER_TAGS.TAG }, false);
     public static final Index IDX_CUSTOMERS_CODE = Internal.createIndex(DSL.name("idx_customers_code"), Customers.CUSTOMERS, new OrderField[] { Customers.CUSTOMERS.CUSTOMER_CODE }, false);
+    public static final Index IDX_CUSTOMERS_ENTITY_TYPE = Internal.createIndex(DSL.name("idx_customers_entity_type"), Customers.CUSTOMERS, new OrderField[] { Customers.CUSTOMERS.ENTITY_TYPE }, false);
+    public static final Index IDX_CUSTOMERS_PARENT_ID = Internal.createIndex(DSL.name("idx_customers_parent_id"), Customers.CUSTOMERS, new OrderField[] { Customers.CUSTOMERS.PARENT_ID }, false);
     public static final Index IDX_IMPORT_SUMMARY_FILENAME = Internal.createIndex(DSL.name("idx_import_summary_filename"), ImportSummary.IMPORT_SUMMARY, new OrderField[] { ImportSummary.IMPORT_SUMMARY.FILENAME }, false);
     public static final Index IDX_IMPORT_SUMMARY_IMPORT_DATE = Internal.createIndex(DSL.name("idx_import_summary_import_date"), ImportSummary.IMPORT_SUMMARY, new OrderField[] { ImportSummary.IMPORT_SUMMARY.IMPORT_DATE }, false);
     public static final Index IDX_IMPORTED_LINE_ITEMS_CUSTOMER_CODE = Internal.createIndex(DSL.name("idx_imported_line_items_customer_code"), ImportedLineItems.IMPORTED_LINE_ITEMS, new OrderField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.CUSTOMER_CODE }, false);
@@ -44,12 +51,12 @@ public class Indexes {
     public static final Index IDX_IMPORTED_LINE_ITEMS_PRODUCT_CODE = Internal.createIndex(DSL.name("idx_imported_line_items_product_code"), ImportedLineItems.IMPORTED_LINE_ITEMS, new OrderField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.PRODUCT_CODE }, false);
     public static final Index IDX_IMPORTED_LINE_ITEMS_TRANSACTION_DATE = Internal.createIndex(DSL.name("idx_imported_line_items_transaction_date"), ImportedLineItems.IMPORTED_LINE_ITEMS, new OrderField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.TRANSACTION_DATE }, false);
     public static final Index IDX_PRICING_RULE_ACTIVE = Internal.createIndex(DSL.name("idx_pricing_rule_active"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.IS_ACTIVE }, false);
-    public static final Index IDX_PRICING_RULE_CATEGORY = Internal.createIndex(DSL.name("idx_pricing_rule_category"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.RULE_CATEGORY, PricingRule.PRICING_RULE.LAYER_ORDER }, false);
     public static final Index IDX_PRICING_RULE_CONDITION_TYPE = Internal.createIndex(DSL.name("idx_pricing_rule_condition_type"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.CONDITION_TYPE }, false);
     public static final Index IDX_PRICING_RULE_CUSTOMER_CODE = Internal.createIndex(DSL.name("idx_pricing_rule_customer_code"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.CUSTOMER_CODE }, false);
     public static final Index IDX_PRICING_RULE_DATES = Internal.createIndex(DSL.name("idx_pricing_rule_dates"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.VALID_FROM, PricingRule.PRICING_RULE.VALID_TO }, false);
-    public static final Index IDX_PRICING_RULE_MATCHING = Internal.createIndex(DSL.name("idx_pricing_rule_matching"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.CUSTOMER_CODE, PricingRule.PRICING_RULE.CONDITION_TYPE, PricingRule.PRICING_RULE.IS_ACTIVE, PricingRule.PRICING_RULE.PRIORITY }, false);
-    public static final Index IDX_PRICING_RULE_PRIORITY = Internal.createIndex(DSL.name("idx_pricing_rule_priority"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.PRIORITY }, false);
+    public static final Index IDX_PRICING_RULE_EXECUTION_ORDER = Internal.createIndex(DSL.name("idx_pricing_rule_execution_order"), PricingRule.PRICING_RULE, new OrderField[] { PricingRule.PRICING_RULE.EXECUTION_ORDER }, false);
+    public static final Index IDX_PRICING_SESSION_ENTITIES_CUSTOMER_ID = Internal.createIndex(DSL.name("idx_pricing_session_entities_customer_id"), PricingSessionEntities.PRICING_SESSION_ENTITIES, new OrderField[] { PricingSessionEntities.PRICING_SESSION_ENTITIES.CUSTOMER_ID }, false);
+    public static final Index IDX_PRICING_SESSION_ENTITIES_SESSION_ID = Internal.createIndex(DSL.name("idx_pricing_session_entities_session_id"), PricingSessionEntities.PRICING_SESSION_ENTITIES, new OrderField[] { PricingSessionEntities.PRICING_SESSION_ENTITIES.SESSION_ID }, false);
     public static final Index IDX_PRICING_SESSION_LINE_ITEMS_COMPOSITE = Internal.createIndex(DSL.name("idx_pricing_session_line_items_composite"), PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, new OrderField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.SESSION_ID, PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.CUSTOMER_CODE, PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.PRODUCT_CODE }, false);
     public static final Index IDX_PRICING_SESSION_LINE_ITEMS_RULE = Internal.createIndex(DSL.name("idx_pricing_session_line_items_rule"), PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, new OrderField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.APPLIED_RULE_ID }, false);
     public static final Index IDX_PRICING_SESSION_LINE_ITEMS_SESSION_ID = Internal.createIndex(DSL.name("idx_pricing_session_line_items_session_id"), PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, new OrderField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.SESSION_ID }, false);

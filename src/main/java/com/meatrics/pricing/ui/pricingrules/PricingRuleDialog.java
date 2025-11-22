@@ -6,9 +6,7 @@ import com.meatrics.pricing.calculation.PricePreview;
 import com.meatrics.pricing.rule.PricingRule;
 import com.meatrics.pricing.rule.PricingRuleService;
 import com.meatrics.pricing.product.ProductCostRepository;
-import com.meatrics.pricing.rule.RuleCategory;
 import com.meatrics.pricing.rule.RulePreviewResult;
-import com.meatrics.pricing.product.ProductCostRepository;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -36,7 +34,6 @@ import com.vaadin.flow.data.binder.ValidationResult;
 import com.vaadin.flow.data.binder.ValueContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -64,15 +61,13 @@ public class PricingRuleDialog extends Dialog {
     private RadioButtonGroup<String> ruleTypeRadio;
     private ComboBox<Customer> customerDropdown;
     private TextField ruleNameField;
-    private ComboBox<RuleCategory> categoryComboBox;
-    private IntegerField layerOrderField;
+    private IntegerField executionOrderField; // Now represents Execution Order (simplified)
     private DatePicker validFromPicker;
     private DatePicker validToPicker;
     private ComboBox<String> appliesToComboBox;
     private ComboBox<String> conditionValueComboBox;
     private ComboBox<String> pricingMethodComboBox;
     private NumberField pricingValueField;
-    private IntegerField priorityField;
     private Checkbox activeCheckbox;
 
     public PricingRuleDialog(PricingRule rule, PricingRuleService pricingRuleService,
@@ -157,30 +152,16 @@ public class PricingRuleDialog extends Dialog {
         ruleNameField.setWidthFull();
         formLayout.add(ruleNameField, 2);
 
-        // Rule Category
-        categoryComboBox = new ComboBox<>("Rule Category");
-        categoryComboBox.setItems(RuleCategory.values());
-        categoryComboBox.setItemLabelGenerator(RuleCategory::getDisplayName);
-        categoryComboBox.setHelperText("Layer in which this rule applies (Base → Customer → Product → Promotional)");
-        categoryComboBox.setRequiredIndicatorVisible(true);
-        categoryComboBox.setWidthFull();
-        categoryComboBox.addValueChangeListener(event -> {
-            if (event.getValue() != null && layerOrderField.isEmpty()) {
-                // Set default layer order based on category
-                layerOrderField.setValue(event.getValue().getOrder() * 100);
-            }
-        });
-        formLayout.add(categoryComboBox, 1);
-
-        // Layer Order
-        layerOrderField = new IntegerField("Layer Order");
-        layerOrderField.setHelperText("Order within category (lower numbers apply first)");
-        layerOrderField.setValue(1);
-        layerOrderField.setMin(1);
-        layerOrderField.setMax(999999);
-        layerOrderField.setStepButtonsVisible(true);
-        layerOrderField.setWidthFull();
-        formLayout.add(layerOrderField, 1);
+        // Execution Order (simplified - replaces Category + Layer Order + Priority)
+        executionOrderField = new IntegerField("Execution Order");
+        executionOrderField.setHelperText("Rules execute in order: 1, 2, 3... Lower numbers apply first.");
+        executionOrderField.setValue(1);
+        executionOrderField.setMin(1);
+        executionOrderField.setMax(9999);
+        executionOrderField.setStepButtonsVisible(true);
+        executionOrderField.setWidthFull();
+        executionOrderField.setRequiredIndicatorVisible(true);
+        formLayout.add(executionOrderField, 2);
 
         // Valid From Date
         validFromPicker = new DatePicker("Valid From");
@@ -239,13 +220,14 @@ public class PricingRuleDialog extends Dialog {
 
         // Pricing Method
         pricingMethodComboBox = new ComboBox<>("Pricing Method");
-        pricingMethodComboBox.setItems("COST_PLUS_PERCENT", "COST_PLUS_FIXED", "FIXED_PRICE", "MAINTAIN_GP_PERCENT");
+        pricingMethodComboBox.setItems("COST_PLUS_PERCENT", "COST_PLUS_FIXED", "FIXED_PRICE", "MAINTAIN_GP_PERCENT", "TARGET_GP_PERCENT");
         pricingMethodComboBox.setItemLabelGenerator(item -> {
             switch (item) {
                 case "COST_PLUS_PERCENT": return "Cost Plus Percent";
                 case "COST_PLUS_FIXED": return "Cost Plus Fixed";
                 case "FIXED_PRICE": return "Fixed Price";
-                case "MAINTAIN_GP_PERCENT": return "Maintain GP Percent";
+                case "MAINTAIN_GP_PERCENT": return "Maintain GP Percent (Historical)";
+                case "TARGET_GP_PERCENT": return "Target GP Percent (Specific)";
                 default: return item;
             }
         });
@@ -253,10 +235,7 @@ public class PricingRuleDialog extends Dialog {
         pricingMethodComboBox.setRequiredIndicatorVisible(true);
         pricingMethodComboBox.setWidthFull();
         pricingMethodComboBox.addValueChangeListener(event -> {
-            updatePricingValueHelperText(event.getValue());
-            // For MAINTAIN_GP_PERCENT, pricing value is optional (fallback default)
-            boolean isRequired = !"MAINTAIN_GP_PERCENT".equals(event.getValue());
-            pricingValueField.setRequiredIndicatorVisible(isRequired);
+            updatePricingValueFieldForMethod(event.getValue());
         });
         formLayout.add(pricingMethodComboBox, 1);
 
@@ -266,18 +245,8 @@ public class PricingRuleDialog extends Dialog {
         pricingValueField.setWidthFull();
         pricingValueField.setStep(0.01);
         pricingValueField.setValue(20.0); // Default 20% markup (displayed as percentage)
-        updatePricingValueHelperText("COST_PLUS_PERCENT");
+        updatePricingValueFieldForMethod("COST_PLUS_PERCENT");
         formLayout.add(pricingValueField, 1);
-
-        // Priority
-        priorityField = new IntegerField("Priority");
-        priorityField.setRequiredIndicatorVisible(true);
-        priorityField.setWidthFull();
-        priorityField.setValue(5000);
-        priorityField.setHelperText("Lower number = higher priority. Ranges: 1-999 (specific), 1000-4999 (category), 5000+ (default)");
-        priorityField.setMin(1);
-        priorityField.setMax(99999);
-        formLayout.add(priorityField, 1);
 
         // Active Checkbox
         activeCheckbox = new Checkbox("Active");
@@ -316,15 +285,10 @@ public class PricingRuleDialog extends Dialog {
                 .asRequired("Rule name is required")
                 .bind(PricingRule::getRuleName, PricingRule::setRuleName);
 
-        // Rule Category - required
-        binder.forField(categoryComboBox)
-                .asRequired("Rule category is required")
-                .bind(PricingRule::getRuleCategory, PricingRule::setRuleCategory);
-
-        // Layer Order - required
-        binder.forField(layerOrderField)
-                .asRequired("Layer order is required")
-                .bind(PricingRule::getLayerOrder, PricingRule::setLayerOrder);
+        // Execution Order - required (replaces Category + Layer Order + Priority)
+        binder.forField(executionOrderField)
+                .asRequired("Execution order is required")
+                .bind(PricingRule::getExecutionOrder, PricingRule::setExecutionOrder);
 
         // Valid From - optional
         binder.forField(validFromPicker)
@@ -378,32 +342,45 @@ public class PricingRuleDialog extends Dialog {
                 .bind(PricingRule::getPricingMethod, PricingRule::setPricingMethod);
 
         // Pricing Value - conditionally required (optional for MAINTAIN_GP_PERCENT)
-        // For COST_PLUS_PERCENT, convert between percentage (UI) and multiplier (storage)
+        // Convert between user-friendly percentages (UI) and storage format (Database)
         binder.forField(pricingValueField)
                 .withConverter(
                         value -> {
                             // UI -> Database conversion
                             if (value == null) return null;
                             String method = pricingMethodComboBox.getValue();
+                            BigDecimal result;
                             if ("COST_PLUS_PERCENT".equals(method)) {
                                 // Convert percentage to multiplier: 20 -> 1.20, -20 -> 0.80
-                                return BigDecimal.valueOf(1 + value / 100.0);
+                                result = BigDecimal.valueOf(value).divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP)
+                                        .add(BigDecimal.ONE);
+                            } else if ("MAINTAIN_GP_PERCENT".equals(method) || "TARGET_GP_PERCENT".equals(method)) {
+                                // Convert percentage to decimal: 25 -> 0.25, -10 -> -0.10
+                                result = BigDecimal.valueOf(value).divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP);
                             } else {
-                                // For other methods, store as-is
-                                return BigDecimal.valueOf(value);
+                                // For COST_PLUS_FIXED, FIXED_PRICE - store as-is
+                                result = BigDecimal.valueOf(value);
                             }
+                            log.debug("UI -> DB conversion: method={}, input={}, output={}", method, value, result);
+                            return result;
                         },
                         value -> {
                             // Database -> UI conversion
                             if (value == null) return null;
                             String method = pricingMethodComboBox.getValue();
+                            double result;
                             if ("COST_PLUS_PERCENT".equals(method)) {
                                 // Convert multiplier to percentage: 1.20 -> 20, 0.80 -> -20
-                                return (value.doubleValue() - 1.0) * 100.0;
+                                result = value.subtract(BigDecimal.ONE).multiply(new BigDecimal("100")).doubleValue();
+                            } else if ("MAINTAIN_GP_PERCENT".equals(method) || "TARGET_GP_PERCENT".equals(method)) {
+                                // Convert decimal to percentage: 0.25 -> 25, -0.10 -> -10
+                                result = value.multiply(new BigDecimal("100")).doubleValue();
                             } else {
-                                // For other methods, display as-is
-                                return value.doubleValue();
+                                // For COST_PLUS_FIXED, FIXED_PRICE - display as-is
+                                result = value.doubleValue();
                             }
+                            log.debug("DB -> UI conversion: method={}, input={}, output={}", method, value, result);
+                            return result;
                         },
                         "Must be a valid number"
                 )
@@ -427,11 +404,6 @@ public class PricingRuleDialog extends Dialog {
                     return bd != null && bd.compareTo(BigDecimal.ZERO) > 0;
                 }, "Value must be valid for selected pricing method")
                 .bind(PricingRule::getPricingValue, PricingRule::setPricingValue);
-
-        // Priority - required
-        binder.forField(priorityField)
-                .asRequired("Priority is required")
-                .bind(PricingRule::getPriority, PricingRule::setPriority);
 
         // Active
         binder.forField(activeCheckbox)
@@ -457,28 +429,55 @@ public class PricingRuleDialog extends Dialog {
             conditionValueComboBox.setRequiredIndicatorVisible(true);
         }
 
+        // Debug log before loading
+        log.debug("Loading rule - Method: {}, Stored Value: {}",
+                  rule.getPricingMethod(), rule.getPricingValue());
+
         // Now populate all fields from the rule (after dropdowns are loaded)
         binder.readBean(rule);
+
+        // Debug log after loading
+        log.debug("After readBean - Method field: {}, Value field: {}",
+                  pricingMethodComboBox.getValue(), pricingValueField.getValue());
     }
 
     /**
-     * Update helper text for pricing value field based on selected method
+     * Update pricing value field label, helper text, and default value based on pricing method
      */
-    private void updatePricingValueHelperText(String method) {
+    private void updatePricingValueFieldForMethod(String method) {
         if (method == null) return;
 
         switch (method) {
             case "COST_PLUS_PERCENT":
-                pricingValueField.setHelperText("Percentage (e.g., 20 for 20% markup, -20 for 20% rebate/discount)");
+                pricingValueField.setLabel("Pricing Value");
+                pricingValueField.setHelperText("Markup percentage (e.g., 20 for 20% markup, -10 for 10% discount)");
+                pricingValueField.setRequiredIndicatorVisible(true);
+                if (pricingValueField.isEmpty()) {
+                    pricingValueField.setValue(20.0);
+                }
                 break;
             case "COST_PLUS_FIXED":
-                pricingValueField.setHelperText("Fixed amount to add (e.g., 2.50 for $2.50)");
+                pricingValueField.setLabel("Pricing Value");
+                pricingValueField.setHelperText("Fixed amount to add (e.g., 5.00 = cost + $5.00)");
+                pricingValueField.setRequiredIndicatorVisible(true);
                 break;
             case "FIXED_PRICE":
-                pricingValueField.setHelperText("Fixed price (e.g., 28.50 for $28.50)");
+                pricingValueField.setLabel("Pricing Value");
+                pricingValueField.setHelperText("Fixed sell price (e.g., 25.00 = always $25.00)");
+                pricingValueField.setRequiredIndicatorVisible(true);
                 break;
             case "MAINTAIN_GP_PERCENT":
-                pricingValueField.setHelperText("Optional: Default GP% fallback as decimal (e.g., 0.25 for 25% GP). Leave empty to use historical GP% only.");
+                pricingValueField.setLabel("GP% Adjustment");
+                pricingValueField.setHelperText("Adjustment to historical GP% (e.g., 0 = maintain exact, +3 = add 3 points, -2 = reduce 2 points). Supports positive and negative values.");
+                pricingValueField.setRequiredIndicatorVisible(false);
+                if (pricingValueField.isEmpty()) {
+                    pricingValueField.setValue(0.0); // Default to 0 (no adjustment)
+                }
+                break;
+            case "TARGET_GP_PERCENT":
+                pricingValueField.setLabel("Pricing Value");
+                pricingValueField.setHelperText("Target GP% (e.g., 25 for 25% GP, 30 for 30% GP)");
+                pricingValueField.setRequiredIndicatorVisible(true);
                 break;
         }
     }
@@ -623,42 +622,6 @@ public class PricingRuleDialog extends Dialog {
                 warningBox.add(warningLine, suggestion);
                 content.add(warningBox);
             } else if (result.getTotalMatchCount() > 0) {
-                // Add layering context for non-base-price rules
-                if (testRule.getRuleCategory() != null && testRule.getRuleCategory() != RuleCategory.BASE_PRICE) {
-                    Div layerContext = new Div();
-                    layerContext.getStyle()
-                        .set("background-color", "var(--lumo-primary-color-10pct)")
-                        .set("border-left", "4px solid var(--lumo-primary-color)")
-                        .set("border-radius", "var(--lumo-border-radius-m)")
-                        .set("padding", "var(--lumo-space-m)")
-                        .set("margin-top", "var(--lumo-space-m)")
-                        .set("margin-bottom", "var(--lumo-space-m)");
-
-                    Span layerTitle = new Span("Layer: " + testRule.getRuleCategory().getDisplayName());
-                    layerTitle.getStyle()
-                        .set("font-weight", "600")
-                        .set("display", "block");
-
-                    Span layerInfo = new Span("This rule applies AFTER base pricing.");
-                    layerInfo.getStyle()
-                        .set("color", "var(--lumo-secondary-text-color)")
-                        .set("font-size", "var(--lumo-font-size-s)")
-                        .set("display", "block")
-                        .set("margin-top", "var(--lumo-space-xs)");
-
-                    // Show example calculation chain
-                    Span exampleChain = new Span(getLayeringExample(testRule));
-                    exampleChain.getStyle()
-                        .set("font-family", "monospace")
-                        .set("font-size", "var(--lumo-font-size-s)")
-                        .set("display", "block")
-                        .set("margin-top", "var(--lumo-space-xs)")
-                        .set("color", "var(--lumo-body-text-color)");
-
-                    layerContext.add(layerTitle, layerInfo, exampleChain);
-                    content.add(layerContext);
-                }
-
                 Grid<PricePreview> previewGrid = new Grid<>(PricePreview.class, false);
                 previewGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
                 previewGrid.setHeight("400px");
@@ -760,6 +723,14 @@ public class PricingRuleDialog extends Dialog {
                 }
             }
 
+            // Check for duplicate execution order
+            if (hasDuplicateExecutionOrder(rule)) {
+                showErrorNotification("A rule with execution order " + rule.getExecutionOrder() +
+                    " already exists for " + (rule.getCustomerCode() != null ? "customer " + rule.getCustomerCode() : "standard rules") +
+                    ". Please use a different execution order.");
+                return;
+            }
+
             // Save the rule
             PricingRule savedRule = pricingRuleService.saveRule(rule);
 
@@ -784,6 +755,41 @@ public class PricingRuleDialog extends Dialog {
     public void open(Consumer<PricingRule> callback) {
         this.onSaveCallback = callback;
         open();
+    }
+
+    /**
+     * Check if another rule with the same execution order already exists
+     * for the same scope (same customer or both standard rules)
+     */
+    private boolean hasDuplicateExecutionOrder(PricingRule ruleToCheck) {
+        if (ruleToCheck.getExecutionOrder() == null) {
+            return false;
+        }
+
+        List<PricingRule> allRules = pricingRuleService.getAllRules();
+
+        for (PricingRule existingRule : allRules) {
+            // Skip if it's the same rule (when editing)
+            if (existingRule.getId() != null && existingRule.getId().equals(ruleToCheck.getId())) {
+                continue;
+            }
+
+            // Check if execution order matches
+            if (!existingRule.getExecutionOrder().equals(ruleToCheck.getExecutionOrder())) {
+                continue;
+            }
+
+            // Check if they're in the same scope (both standard, or same customer)
+            boolean bothStandard = (existingRule.getCustomerCode() == null && ruleToCheck.getCustomerCode() == null);
+            boolean sameCustomer = (existingRule.getCustomerCode() != null &&
+                                  existingRule.getCustomerCode().equals(ruleToCheck.getCustomerCode()));
+
+            if (bothStandard || sameCustomer) {
+                return true; // Duplicate found
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -839,92 +845,5 @@ public class PricingRuleDialog extends Dialog {
     private void showErrorNotification(String message) {
         Notification notification = Notification.show(message, 5000, Notification.Position.BOTTOM_START);
         notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    /**
-     * Generate example calculation chain showing how this rule fits into the layering system
-     */
-    private String getLayeringExample(PricingRule rule) {
-        String method = rule.getPricingMethod();
-        BigDecimal value = rule.getPricingValue();
-        RuleCategory category = rule.getRuleCategory();
-
-        // Example base cost
-        BigDecimal exampleCost = new BigDecimal("10.00");
-        BigDecimal basePrice = new BigDecimal("12.00"); // Assume +20% base markup
-
-        StringBuilder example = new StringBuilder();
-        example.append("Example: Cost $10.00\n");
-        example.append("→ Base Price (+20%): $12.00\n");
-
-        // Show where this rule applies in the chain
-        if (category == RuleCategory.CUSTOMER_ADJUSTMENT) {
-            example.append("→ YOUR RULE (");
-            example.append(formatRuleForExample(method, value));
-            example.append("): ");
-            BigDecimal result = applyExampleRule(basePrice, method, value);
-            example.append(String.format("$%.2f", result));
-        } else if (category == RuleCategory.PRODUCT_ADJUSTMENT) {
-            example.append("→ Customer Adjustment (if any): $11.40\n");
-            example.append("→ YOUR RULE (");
-            example.append(formatRuleForExample(method, value));
-            example.append("): ");
-            BigDecimal result = applyExampleRule(new BigDecimal("11.40"), method, value);
-            example.append(String.format("$%.2f", result));
-        } else if (category == RuleCategory.PROMOTIONAL) {
-            example.append("→ Customer Adjustment (if any): $11.40\n");
-            example.append("→ Product Adjustment (if any): $13.40\n");
-            example.append("→ YOUR RULE (");
-            example.append(formatRuleForExample(method, value));
-            example.append("): ");
-            BigDecimal result = applyExampleRule(new BigDecimal("13.40"), method, value);
-            example.append(String.format("$%.2f", result));
-        }
-
-        return example.toString();
-    }
-
-    /**
-     * Format rule for example display
-     */
-    private String formatRuleForExample(String method, BigDecimal value) {
-        if (value == null) return method;
-
-        switch (method) {
-            case "COST_PLUS_PERCENT":
-                BigDecimal percent = value.subtract(BigDecimal.ONE).multiply(new BigDecimal("100"));
-                String sign = percent.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "";
-                return String.format("%s%.0f%%", sign, percent);
-            case "COST_PLUS_FIXED":
-                return String.format("+$%.2f", value);
-            case "FIXED_PRICE":
-                return String.format("Fixed $%.2f", value);
-            case "MAINTAIN_GP_PERCENT":
-                BigDecimal gpPercent = value.multiply(new BigDecimal("100"));
-                return String.format("Maintain %.0f%% GP", gpPercent);
-            default:
-                return method;
-        }
-    }
-
-    /**
-     * Apply rule to a price for example calculation
-     */
-    private BigDecimal applyExampleRule(BigDecimal currentPrice, String method, BigDecimal value) {
-        if (value == null) return currentPrice;
-
-        switch (method) {
-            case "COST_PLUS_PERCENT":
-                return currentPrice.multiply(value).setScale(2, java.math.RoundingMode.HALF_UP);
-            case "COST_PLUS_FIXED":
-                return currentPrice.add(value).setScale(2, java.math.RoundingMode.HALF_UP);
-            case "FIXED_PRICE":
-                return value.setScale(2, java.math.RoundingMode.HALF_UP);
-            case "MAINTAIN_GP_PERCENT":
-                // For example purposes, just show a reasonable price
-                return new BigDecimal("12.50").setScale(2, java.math.RoundingMode.HALF_UP);
-            default:
-                return currentPrice;
-        }
     }
 }

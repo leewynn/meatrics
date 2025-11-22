@@ -13,7 +13,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
- * Customer master data with ratings for pricing analysis
+ * Customer master data with group hierarchy support
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class CustomersRecord extends UpdatableRecordImpl<CustomersRecord> {
@@ -79,45 +79,77 @@ public class CustomersRecord extends UpdatableRecordImpl<CustomersRecord> {
     }
 
     /**
+     * Setter for <code>public.customers.entity_type</code>. Entity type: GROUP
+     * or COMPANY
+     */
+    public void setEntityType(String value) {
+        set(4, value);
+    }
+
+    /**
+     * Getter for <code>public.customers.entity_type</code>. Entity type: GROUP
+     * or COMPANY
+     */
+    public String getEntityType() {
+        return (String) get(4);
+    }
+
+    /**
+     * Setter for <code>public.customers.parent_id</code>. Reference to parent
+     * group if this company belongs to a group
+     */
+    public void setParentId(Long value) {
+        set(5, value);
+    }
+
+    /**
+     * Getter for <code>public.customers.parent_id</code>. Reference to parent
+     * group if this company belongs to a group
+     */
+    public Long getParentId() {
+        return (Long) get(5);
+    }
+
+    /**
      * Setter for <code>public.customers.notes</code>.
      */
     public void setNotes(String value) {
-        set(4, value);
+        set(6, value);
     }
 
     /**
      * Getter for <code>public.customers.notes</code>.
      */
     public String getNotes() {
-        return (String) get(4);
+        return (String) get(6);
     }
 
     /**
      * Setter for <code>public.customers.created_date</code>.
      */
     public void setCreatedDate(LocalDateTime value) {
-        set(5, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>public.customers.created_date</code>.
      */
     public LocalDateTime getCreatedDate() {
-        return (LocalDateTime) get(5);
+        return (LocalDateTime) get(7);
     }
 
     /**
      * Setter for <code>public.customers.modified_date</code>.
      */
     public void setModifiedDate(LocalDateTime value) {
-        set(6, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>public.customers.modified_date</code>.
      */
     public LocalDateTime getModifiedDate() {
-        return (LocalDateTime) get(6);
+        return (LocalDateTime) get(8);
     }
 
     // -------------------------------------------------------------------------
@@ -143,13 +175,15 @@ public class CustomersRecord extends UpdatableRecordImpl<CustomersRecord> {
     /**
      * Create a detached, initialised CustomersRecord
      */
-    public CustomersRecord(Long customerId, String customerCode, String customerName, String customerRating, String notes, LocalDateTime createdDate, LocalDateTime modifiedDate) {
+    public CustomersRecord(Long customerId, String customerCode, String customerName, String customerRating, String entityType, Long parentId, String notes, LocalDateTime createdDate, LocalDateTime modifiedDate) {
         super(Customers.CUSTOMERS);
 
         setCustomerId(customerId);
         setCustomerCode(customerCode);
         setCustomerName(customerName);
         setCustomerRating(customerRating);
+        setEntityType(entityType);
+        setParentId(parentId);
         setNotes(notes);
         setCreatedDate(createdDate);
         setModifiedDate(modifiedDate);

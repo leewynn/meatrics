@@ -45,14 +45,13 @@ public class GroupedLineItem {
     // Transient fields for UI state (modifications and rule tracking)
     private transient boolean amountModified = false;
     private transient BigDecimal originalAmount = null;
-    private transient PricingRule appliedRule;  // Which rule was used (backward compatibility - primary/first rule)
     private transient boolean manualOverride;   // User edited price flag
 
-    // Phase 2 additions: Multi-rule support
+    // Multi-rule support
     private transient List<PricingRule> appliedRules;          // Multiple rules can be applied
     private transient List<BigDecimal> intermediateResults;    // Prices after each rule
 
-    // Phase 3: Immutable rule snapshots for audit trail
+    // Immutable rule snapshots for audit trail
     private transient List<com.meatrics.pricing.session.AppliedRuleSnapshot> appliedRuleSnapshots;
 
     public GroupedLineItem() {
@@ -286,29 +285,6 @@ public class GroupedLineItem {
         this.newGrossProfit = newGrossProfit;
     }
 
-    /**
-     * Get the primary (first) applied rule for backward compatibility.
-     * If multiple rules are set, returns the first one.
-     * Otherwise, returns the single appliedRule field.
-     *
-     * @return The primary pricing rule, or null if no rules were applied
-     */
-    public PricingRule getAppliedRule() {
-        List<PricingRule> rules = getAppliedRules();
-        return rules.isEmpty() ? appliedRule : rules.get(0);
-    }
-
-    /**
-     * Set a single applied rule (backward compatible).
-     * This sets both the legacy appliedRule field and the new appliedRules list.
-     *
-     * @param appliedRule The pricing rule to set
-     */
-    public void setAppliedRule(PricingRule appliedRule) {
-        this.appliedRule = appliedRule;
-        this.appliedRules = appliedRule != null ? List.of(appliedRule) : List.of();
-    }
-
     public boolean isManualOverride() {
         return manualOverride;
     }
@@ -317,7 +293,7 @@ public class GroupedLineItem {
         this.manualOverride = manualOverride;
     }
 
-    // Phase 2: Multi-rule support getters and setters
+    // Multi-rule support getters and setters
 
     /**
      * Get all applied pricing rules in the order they were applied.
@@ -330,16 +306,11 @@ public class GroupedLineItem {
 
     /**
      * Set multiple applied pricing rules.
-     * Also updates the legacy appliedRule field to the first rule for backward compatibility.
      *
      * @param appliedRules List of pricing rules to set
      */
     public void setAppliedRules(List<PricingRule> appliedRules) {
         this.appliedRules = appliedRules;
-        // Update legacy field for backward compatibility
-        if (appliedRules != null && !appliedRules.isEmpty()) {
-            this.appliedRule = appliedRules.get(0);
-        }
     }
 
     /**

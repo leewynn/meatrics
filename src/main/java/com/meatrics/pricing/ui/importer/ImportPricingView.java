@@ -836,46 +836,65 @@ public class ImportPricingView extends Main {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
             );
 
-            // Use modern DownloadHandler pattern (Anchor with lambda)
-            Anchor downloadLink = new Anchor("", "");
-            downloadLink.getElement().setAttribute("download", true);
-            downloadLink.getElement().setAttribute("style", "display:none");
+            // Create an invisible Anchor with DownloadHandler for programmatic download
+            Anchor downloadLink = new Anchor(event -> {
+                try {
+                    // Set file metadata
+                    event.setFileName(filename);
+                    event.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    event.setContentLength(excelBytes.length);
 
-            downloadLink.setHref(event -> {
-                event.setFileName(filename);
-                event.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-                event.setContentLength(excelBytes.length);
+                    // Write the Excel bytes to the output stream
+                    try (OutputStream outputStream = event.getOutputStream()) {
+                        outputStream.write(excelBytes);
+                    }
 
-                try (OutputStream out = event.getOutputStream()) {
-                    out.write(excelBytes);
-
-                    // Show success notification (thread-safe)
+                    // Update UI to show success notification
                     event.getUI().access(() -> {
-                        Notification.show("Excel file downloaded successfully!", 3000, Notification.Position.BOTTOM_START)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        Notification notification = Notification.show(
+                            "Excel file downloaded successfully!",
+                            3000,
+                            Notification.Position.BOTTOM_START
+                        );
+                        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                     });
+
+                    log.info("Downloaded zero-amount items Excel: {} records, {} bytes",
+                            items.size(), excelBytes.length);
+
                 } catch (IOException e) {
-                    log.error("Error writing zero-amount items Excel file", e);
-                    event.getUI().access(() -> {
-                        Notification.show("Error downloading file: " + e.getMessage(), 5000, Notification.Position.BOTTOM_START)
-                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                    });
+                    log.error("Error writing zero-amount items Excel to output stream", e);
                     event.getResponse().setStatus(500);
+                    event.getUI().access(() -> {
+                        Notification notification = Notification.show(
+                            "Error downloading file: " + e.getMessage(),
+                            5000,
+                            Notification.Position.BOTTOM_START
+                        );
+                        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    });
                 }
-            });
+            }, "");
 
+            // Make the anchor invisible and add to layout
+            downloadLink.getElement().setAttribute("style", "display: none;");
             add(downloadLink);
+
+            // Programmatically trigger the download
             downloadLink.getElement().callJsFunction("click");
 
-            log.info("Generated zero-amount items Excel: {} records", items.size());
+            // Show initiating notification
+            Notification notification = Notification.show("Generating report...", 3000, Notification.Position.BOTTOM_START);
+            notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
 
         } catch (IOException e) {
             log.error("Error generating zero-amount items Excel file", e);
-            Notification.show(
+            Notification notification = Notification.show(
                 "Error generating Excel file: " + e.getMessage(),
                 5000,
                 Notification.Position.BOTTOM_START
-            ).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            );
+            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
         }
     }
 }

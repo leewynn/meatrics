@@ -24,7 +24,7 @@ public class AppliedRuleSnapshotRepository {
      * @return List of snapshots ordered by application order
      */
     public List<AppliedRuleSnapshot> findBySessionLineItemId(Long sessionLineItemId) {
-        String sql = "SELECT id, session_line_item_id, rule_id, rule_name, rule_category, " +
+        String sql = "SELECT id, session_line_item_id, rule_id, rule_name, " +
                 "pricing_method, pricing_value, application_order, input_price, output_price, " +
                 "applied_at " +
                 "FROM pricing_session_applied_rules " +
@@ -42,7 +42,7 @@ public class AppliedRuleSnapshotRepository {
      */
     public List<AppliedRuleSnapshot> findBySessionId(Long sessionId) {
         String sql = "SELECT ars.id, ars.session_line_item_id, ars.rule_id, ars.rule_name, " +
-                "ars.rule_category, ars.pricing_method, ars.pricing_value, ars.application_order, " +
+                "ars.pricing_method, ars.pricing_value, ars.application_order, " +
                 "ars.input_price, ars.output_price, ars.applied_at " +
                 "FROM pricing_session_applied_rules ars " +
                 "INNER JOIN pricing_session_line_items psli ON ars.session_line_item_id = psli.id " +
@@ -64,9 +64,9 @@ public class AppliedRuleSnapshotRepository {
         }
 
         String sql = "INSERT INTO pricing_session_applied_rules " +
-                "(session_line_item_id, rule_id, rule_name, rule_category, pricing_method, " +
+                "(session_line_item_id, rule_id, rule_name, pricing_method, " +
                 "pricing_value, application_order, input_price, output_price) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         dsl.batch(
             snapshots.stream()
@@ -74,7 +74,6 @@ public class AppliedRuleSnapshotRepository {
                     sessionLineItemId,
                     snapshot.getRuleId(),
                     snapshot.getRuleName(),
-                    snapshot.getRuleCategory(),
                     snapshot.getPricingMethod(),
                     snapshot.getPricingValue(),
                     snapshot.getApplicationOrder(),
@@ -114,7 +113,6 @@ public class AppliedRuleSnapshotRepository {
         snapshot.setSessionLineItemId(record.get("session_line_item_id", Long.class));
         snapshot.setRuleId(record.get("rule_id", Long.class));
         snapshot.setRuleName(record.get("rule_name", String.class));
-        snapshot.setRuleCategory(record.get("rule_category", String.class));
         snapshot.setPricingMethod(record.get("pricing_method", String.class));
         snapshot.setPricingValue(record.get("pricing_value", java.math.BigDecimal.class));
         snapshot.setApplicationOrder(record.get("application_order", Integer.class));

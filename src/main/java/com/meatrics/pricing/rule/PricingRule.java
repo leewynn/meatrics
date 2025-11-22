@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
  *       Stored as multiplier (1.20 or 0.80). Formula: price = cost × multiplier</li>
  *   <li><b>COST_PLUS_FIXED:</b> Add fixed amount to cost (e.g., $2.50)</li>
  *   <li><b>FIXED_PRICE:</b> Set absolute price regardless of cost (e.g., $28.50)</li>
- *   <li><b>MAINTAIN_GP_PERCENT:</b> Maintain historical gross profit percentage.
- *       Calculates historical GP% from lastUnitSellPrice and lastCost, then applies
- *       to new incoming cost. Falls back to pricingValue as default GP% if no history.
- *       Formula: newPrice = incomingCost / (1 - GP%)</li>
+ *   <li><b>MAINTAIN_GP_PERCENT:</b> Maintain historical gross profit percentage with optional adjustment.
+ *       Calculates historical GP% from lastUnitSellPrice and lastCost, then adds the adjustment value.
+ *       Examples: 0% = maintain exact historical GP%, +3% = add 3 points, -2% = reduce 2 points.
+ *       Formula: targetGP% = historicalGP% + adjustment; newPrice = incomingCost / (1 - targetGP%)</li>
  * </ul>
  */
 public class PricingRule {
@@ -28,15 +28,13 @@ public class PricingRule {
     private String conditionType;  // 'ALL_PRODUCTS', 'CATEGORY', 'PRODUCT_CODE'
     private String conditionValue; // Category name or product code (NULL for ALL_PRODUCTS)
     private String pricingMethod;  // 'COST_PLUS_PERCENT', 'COST_PLUS_FIXED', 'FIXED_PRICE', 'MAINTAIN_GP_PERCENT'
-    private BigDecimal pricingValue; // The multiplier, amount, or default GP% (for MAINTAIN_GP_PERCENT)
-    private Integer priority;
+    private BigDecimal pricingValue; // The multiplier, amount, or GP% adjustment (for MAINTAIN_GP_PERCENT)
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Phase 2 additions: Rule categorization and date-based validity
-    private RuleCategory ruleCategory;  // Pricing layer (BASE_PRICE, CUSTOMER_ADJUSTMENT, etc.)
-    private Integer layerOrder;         // Order within category for deterministic sorting
+    // Execution order and date-based validity
+    private Integer executionOrder;     // Execution order: 1, 2, 3...
     private LocalDate validFrom;        // Rule activation date (nullable)
     private LocalDate validTo;          // Rule expiration date (nullable)
 
@@ -100,14 +98,6 @@ public class PricingRule {
         this.pricingValue = pricingValue;
     }
 
-    public Integer getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Integer priority) {
-        this.priority = priority;
-    }
-
     public Boolean getIsActive() {
         return isActive;
     }
@@ -146,21 +136,13 @@ public class PricingRule {
         return customerCode != null;
     }
 
-    // Getters and setters for Phase 2 fields
-    public RuleCategory getRuleCategory() {
-        return ruleCategory;
+    // Getters and setters for execution order and date validity
+    public Integer getExecutionOrder() {
+        return executionOrder;
     }
 
-    public void setRuleCategory(RuleCategory ruleCategory) {
-        this.ruleCategory = ruleCategory;
-    }
-
-    public Integer getLayerOrder() {
-        return layerOrder;
-    }
-
-    public void setLayerOrder(Integer layerOrder) {
-        this.layerOrder = layerOrder;
+    public void setExecutionOrder(Integer executionOrder) {
+        this.executionOrder = executionOrder;
     }
 
     public LocalDate getValidFrom() {
@@ -213,16 +195,11 @@ public class PricingRule {
 
     /**
      * Get formatted rule description for UI display.
-     * Shows rule name, category, pricing method, and date validity status.
+     * Shows rule name, pricing method, and date validity status.
      */
     public String getFormattedDescription() {
         StringBuilder sb = new StringBuilder();
         sb.append(ruleName != null ? ruleName : "Unnamed Rule");
-
-        // Add category badge
-        if (ruleCategory != null) {
-            sb.append(" [").append(ruleCategory.getDisplayName()).append("]");
-        }
 
         // Add pricing method
         if (pricingMethod != null) {

@@ -7,6 +7,8 @@ package com.meatrics.generated.tables;
 import com.meatrics.generated.Indexes;
 import com.meatrics.generated.Keys;
 import com.meatrics.generated.Public;
+import com.meatrics.generated.tables.Customers.CustomersPath;
+import com.meatrics.generated.tables.PricingSessionEntities.PricingSessionEntitiesPath;
 import com.meatrics.generated.tables.PricingSessionLineItems.PricingSessionLineItemsPath;
 import com.meatrics.generated.tables.records.PricingSessionsRecord;
 
@@ -179,6 +181,19 @@ public class PricingSessions extends TableImpl<PricingSessionsRecord> {
         return Arrays.asList(Keys.PRICING_SESSIONS_SESSION_NAME_KEY);
     }
 
+    private transient PricingSessionEntitiesPath _pricingSessionEntities;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.pricing_session_entities</code> table
+     */
+    public PricingSessionEntitiesPath pricingSessionEntities() {
+        if (_pricingSessionEntities == null)
+            _pricingSessionEntities = new PricingSessionEntitiesPath(this, null, Keys.PRICING_SESSION_ENTITIES__FK_PRICING_SESSION_ENTITIES_SESSION.getInverseKey());
+
+        return _pricingSessionEntities;
+    }
+
     private transient PricingSessionLineItemsPath _pricingSessionLineItems;
 
     /**
@@ -190,6 +205,14 @@ public class PricingSessions extends TableImpl<PricingSessionsRecord> {
             _pricingSessionLineItems = new PricingSessionLineItemsPath(this, null, Keys.PRICING_SESSION_LINE_ITEMS__PRICING_SESSION_LINE_ITEMS_SESSION_ID_FKEY.getInverseKey());
 
         return _pricingSessionLineItems;
+    }
+
+    /**
+     * Get the implicit many-to-many join path to the
+     * <code>public.customers</code> table
+     */
+    public CustomersPath customers() {
+        return pricingSessionEntities().customers();
     }
 
     @Override

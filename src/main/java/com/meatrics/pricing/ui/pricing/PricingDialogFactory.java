@@ -1,12 +1,15 @@
 package com.meatrics.pricing.ui.pricing;
 
 import com.meatrics.pricing.customer.Customer;
+import com.meatrics.pricing.customer.CustomerPricingRuleRepository;
 import com.meatrics.pricing.customer.CustomerRepository;
+import com.meatrics.pricing.customer.CustomerTagRepository;
 import com.meatrics.pricing.product.GroupedLineItem;
+import com.meatrics.pricing.product.GroupedLineItemRepository;
 import com.meatrics.pricing.rule.PricingRule;
 import com.meatrics.pricing.session.PricingSession;
-import com.meatrics.pricing.rule.RuleCategory;
-import com.meatrics.pricing.ui.component.CustomerEditDialog;
+import com.meatrics.pricing.ui.customer.CustomerCompanyDialog;
+import com.meatrics.pricing.ui.customer.CustomerGroupDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -48,15 +51,24 @@ public class PricingDialogFactory {
     private final PricingSessionManager sessionManager;
     private final PricingGridColumnManager columnManager;
     private final CustomerRepository customerRepository;
+    private final CustomerTagRepository customerTagRepository;
+    private final CustomerPricingRuleRepository customerPricingRuleRepository;
+    private final GroupedLineItemRepository groupedLineItemRepository;
 
     public PricingDialogFactory(PricingCalculator pricingCalculator,
                                PricingSessionManager sessionManager,
                                PricingGridColumnManager columnManager,
-                               CustomerRepository customerRepository) {
+                               CustomerRepository customerRepository,
+                               CustomerTagRepository customerTagRepository,
+                               CustomerPricingRuleRepository customerPricingRuleRepository,
+                               GroupedLineItemRepository groupedLineItemRepository) {
         this.pricingCalculator = pricingCalculator;
         this.sessionManager = sessionManager;
         this.columnManager = columnManager;
         this.customerRepository = customerRepository;
+        this.customerTagRepository = customerTagRepository;
+        this.customerPricingRuleRepository = customerPricingRuleRepository;
+        this.groupedLineItemRepository = groupedLineItemRepository;
     }
 
     /**
@@ -102,7 +114,7 @@ public class PricingDialogFactory {
                 if (newPrice != null && newPrice > 0) {
                     item.setNewUnitSellPrice(BigDecimal.valueOf(newPrice));
                     item.setManualOverride(true);
-                    item.setAppliedRule(null); // Clear rule when manually overridden
+                    item.setAppliedRules(List.of()); // Clear rules when manually overridden
                     pricingCalculator.recalculateItemFields(item);
 
                     onSave.accept(item);
@@ -251,28 +263,27 @@ public class PricingDialogFactory {
         ruleLayout.setPadding(true);
         ruleLayout.getStyle()
             .set("background-color", "white")
-            .set("border-left", "4px solid " + getLayerColor(rule.getRuleCategory()))
+            .set("border-left", "4px solid #2196F3")
             .set("border-radius", "4px")
             .set("padding", "8px")
             .set("margin", "4px 0");
 
-        // Layer and rule name
+        // Rule header with execution order
         HorizontalLayout headerLayout = new HorizontalLayout();
         headerLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         headerLayout.getStyle().set("gap", "6px");
 
-        Icon layerIcon = getLayerIcon(rule.getRuleCategory());
-        layerIcon.setSize("16px");
-        layerIcon.getStyle().set("color", getLayerColor(rule.getRuleCategory()));
+        Icon ruleIcon = VaadinIcon.COG.create();
+        ruleIcon.setSize("16px");
+        ruleIcon.getStyle().set("color", "#2196F3");
 
-        Span layerName = new Span(rule.getRuleCategory() != null ?
-            rule.getRuleCategory().getDisplayName() : "Unknown");
-        layerName.getStyle()
+        Span executionOrder = new Span("Rule #" + (rule.getExecutionOrder() != null ? rule.getExecutionOrder() : "?"));
+        executionOrder.getStyle()
             .set("font-weight", "600")
-            .set("color", getLayerColor(rule.getRuleCategory()))
+            .set("color", "#2196F3")
             .set("font-size", "0.85rem");
 
-        headerLayout.add(layerIcon, layerName);
+        headerLayout.add(ruleIcon, executionOrder);
 
         // Rule details
         Span ruleName = new Span(rule.getRuleName());
@@ -388,7 +399,7 @@ public class PricingDialogFactory {
     }
 
     /**
-     * Open customer edit dialog
+     * Open customer edit dialog - opens appropriate dialog based on entity type
      */
     public void openCustomerEditDialog(GroupedLineItem item) {
         String customerCode = item.getCustomerCode();
@@ -397,8 +408,27 @@ public class PricingDialogFactory {
         }
 
         customerRepository.findByCustomerCode(customerCode).ifPresent(customer -> {
-            CustomerEditDialog dialog = new CustomerEditDialog(customer, customerRepository);
-            dialog.open(null);
+            if (customer.isGroup()) {
+                // Open group dialog
+                CustomerGroupDialog dialog = new CustomerGroupDialog(
+                        customer,
+                        customerRepository,
+                        customerTagRepository,
+                        customerPricingRuleRepository,
+                        groupedLineItemRepository
+                );
+                dialog.open();
+            } else {
+                // Open company dialog
+                CustomerCompanyDialog dialog = new CustomerCompanyDialog(
+                        customer,
+                        customerRepository,
+                        customerTagRepository,
+                        customerPricingRuleRepository,
+                        groupedLineItemRepository
+                );
+                dialog.open();
+            }
         });
     }
 
@@ -830,6 +860,13 @@ public class PricingDialogFactory {
                 } else {
                     return "Maintain GP% from last cycle";
                 }
+            case "TARGET_GP_PERCENT":
+                if (value != null) {
+                    BigDecimal gpPercent = value.multiply(new BigDecimal("100"));
+                    return String.format("Target GP%% at %.1f%%", gpPercent);
+                } else {
+                    return "Target GP% (no value set)";
+                }
             default:
                 return method;
         }
@@ -873,50 +910,19 @@ public class PricingDialogFactory {
                 return String.format("%s ÷ (1 - %.1f%% %s) = %s ÷ %.4f = %s",
                     pricingCalculator.formatCurrency(inputPrice), actualGPPercent, gpSource,
                     pricingCalculator.formatCurrency(inputPrice), divisor, pricingCalculator.formatCurrency(resultPrice));
+            case "TARGET_GP_PERCENT":
+                if (value == null || resultPrice == null || inputPrice == null) return "";
+                if (resultPrice.compareTo(BigDecimal.ZERO) == 0) return "";
+
+                // value is the target GP% as decimal (e.g., 0.25 for 25%)
+                BigDecimal targetGPPercent = value.multiply(new BigDecimal("100"));
+                BigDecimal targetDivisor = BigDecimal.ONE.subtract(value);
+
+                return String.format("%s ÷ (1 - %.1f%%) = %s ÷ %.4f = %s",
+                    pricingCalculator.formatCurrency(inputPrice), targetGPPercent,
+                    pricingCalculator.formatCurrency(inputPrice), targetDivisor, pricingCalculator.formatCurrency(resultPrice));
             default:
                 return "";
-        }
-    }
-
-    /**
-     * Get color for rule category badge
-     */
-    private String getLayerColor(RuleCategory category) {
-        if (category == null) {
-            return "#888888"; // Gray for unknown
-        }
-        switch (category) {
-            case BASE_PRICE:
-                return "#2196F3"; // Blue
-            case CUSTOMER_ADJUSTMENT:
-                return "#4CAF50"; // Green
-            case PRODUCT_ADJUSTMENT:
-                return "#FF9800"; // Orange
-            case PROMOTIONAL:
-                return "#E91E63"; // Pink
-            default:
-                return "#888888"; // Gray
-        }
-    }
-
-    /**
-     * Get icon for rule category
-     */
-    private Icon getLayerIcon(RuleCategory category) {
-        if (category == null) {
-            return VaadinIcon.QUESTION_CIRCLE.create();
-        }
-        switch (category) {
-            case BASE_PRICE:
-                return VaadinIcon.DOLLAR.create();
-            case CUSTOMER_ADJUSTMENT:
-                return VaadinIcon.USER.create();
-            case PRODUCT_ADJUSTMENT:
-                return VaadinIcon.PACKAGE.create();
-            case PROMOTIONAL:
-                return VaadinIcon.TAG.create();
-            default:
-                return VaadinIcon.QUESTION_CIRCLE.create();
         }
     }
 

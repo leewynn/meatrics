@@ -19,7 +19,13 @@
       "Task(subagent_type:Plan)",
       "Task(subagent_type:general-purpose)",
       "Bash(xargs:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(jar -tf:*)",
+      "Bash(cat:*)",
+      "Bash(unzip:*)",
+      "Bash(zipinfo:*)",
+      "WebFetch(domain:www.basiq.io)",
+      "WebFetch(domain:developer.xero.com)"
     ],
     "deny": [
       "Bash(mvn:*)"

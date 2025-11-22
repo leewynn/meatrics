@@ -5,20 +5,26 @@ package com.meatrics.generated;
 
 
 import com.meatrics.generated.tables.CostImportSummary;
+import com.meatrics.generated.tables.CustomerPricingRules;
+import com.meatrics.generated.tables.CustomerTags;
 import com.meatrics.generated.tables.Customers;
 import com.meatrics.generated.tables.ImportSummary;
 import com.meatrics.generated.tables.ImportedLineItems;
 import com.meatrics.generated.tables.PricingRule;
 import com.meatrics.generated.tables.PricingSessionAppliedRules;
+import com.meatrics.generated.tables.PricingSessionEntities;
 import com.meatrics.generated.tables.PricingSessionLineItems;
 import com.meatrics.generated.tables.PricingSessions;
 import com.meatrics.generated.tables.ProductCosts;
 import com.meatrics.generated.tables.records.CostImportSummaryRecord;
+import com.meatrics.generated.tables.records.CustomerPricingRulesRecord;
+import com.meatrics.generated.tables.records.CustomerTagsRecord;
 import com.meatrics.generated.tables.records.CustomersRecord;
 import com.meatrics.generated.tables.records.ImportSummaryRecord;
 import com.meatrics.generated.tables.records.ImportedLineItemsRecord;
 import com.meatrics.generated.tables.records.PricingRuleRecord;
 import com.meatrics.generated.tables.records.PricingSessionAppliedRulesRecord;
+import com.meatrics.generated.tables.records.PricingSessionEntitiesRecord;
 import com.meatrics.generated.tables.records.PricingSessionLineItemsRecord;
 import com.meatrics.generated.tables.records.PricingSessionsRecord;
 import com.meatrics.generated.tables.records.ProductCostsRecord;
@@ -43,6 +49,9 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<CostImportSummaryRecord> COST_IMPORT_SUMMARY_PKEY = Internal.createUniqueKey(CostImportSummary.COST_IMPORT_SUMMARY, DSL.name("cost_import_summary_pkey"), new TableField[] { CostImportSummary.COST_IMPORT_SUMMARY.COST_IMPORT_ID }, true);
+    public static final UniqueKey<CustomerPricingRulesRecord> CUSTOMER_PRICING_RULES_CUSTOMER_ID_EXECUTION_ORDER_KEY = Internal.createUniqueKey(CustomerPricingRules.CUSTOMER_PRICING_RULES, DSL.name("customer_pricing_rules_customer_id_execution_order_key"), new TableField[] { CustomerPricingRules.CUSTOMER_PRICING_RULES.CUSTOMER_ID, CustomerPricingRules.CUSTOMER_PRICING_RULES.EXECUTION_ORDER }, true);
+    public static final UniqueKey<CustomerPricingRulesRecord> CUSTOMER_PRICING_RULES_PKEY = Internal.createUniqueKey(CustomerPricingRules.CUSTOMER_PRICING_RULES, DSL.name("customer_pricing_rules_pkey"), new TableField[] { CustomerPricingRules.CUSTOMER_PRICING_RULES.ID }, true);
+    public static final UniqueKey<CustomerTagsRecord> CUSTOMER_TAGS_PKEY = Internal.createUniqueKey(CustomerTags.CUSTOMER_TAGS, DSL.name("customer_tags_pkey"), new TableField[] { CustomerTags.CUSTOMER_TAGS.CUSTOMER_ID, CustomerTags.CUSTOMER_TAGS.TAG }, true);
     public static final UniqueKey<CustomersRecord> CUSTOMERS_PKEY = Internal.createUniqueKey(Customers.CUSTOMERS, DSL.name("customers_pkey"), new TableField[] { Customers.CUSTOMERS.CUSTOMER_ID }, true);
     public static final UniqueKey<CustomersRecord> UQ_CUSTOMER_CODE = Internal.createUniqueKey(Customers.CUSTOMERS, DSL.name("uq_customer_code"), new TableField[] { Customers.CUSTOMERS.CUSTOMER_CODE }, true);
     public static final UniqueKey<ImportSummaryRecord> IMPORT_SUMMARY_FILENAME_KEY = Internal.createUniqueKey(ImportSummary.IMPORT_SUMMARY, DSL.name("import_summary_filename_key"), new TableField[] { ImportSummary.IMPORT_SUMMARY.FILENAME }, true);
@@ -51,6 +60,7 @@ public class Keys {
     public static final UniqueKey<ImportedLineItemsRecord> UK_IMPORTED_LINE_ITEMS_NO_DUPLICATES = Internal.createUniqueKey(ImportedLineItems.IMPORTED_LINE_ITEMS, DSL.name("uk_imported_line_items_no_duplicates"), new TableField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.CUSTOMER_CODE, ImportedLineItems.IMPORTED_LINE_ITEMS.INVOICE_NUMBER, ImportedLineItems.IMPORTED_LINE_ITEMS.PRODUCT_CODE, ImportedLineItems.IMPORTED_LINE_ITEMS.TRANSACTION_DATE, ImportedLineItems.IMPORTED_LINE_ITEMS.QUANTITY, ImportedLineItems.IMPORTED_LINE_ITEMS.AMOUNT }, true);
     public static final UniqueKey<PricingRuleRecord> PRICING_RULE_PKEY = Internal.createUniqueKey(PricingRule.PRICING_RULE, DSL.name("pricing_rule_pkey"), new TableField[] { PricingRule.PRICING_RULE.ID }, true);
     public static final UniqueKey<PricingSessionAppliedRulesRecord> PRICING_SESSION_APPLIED_RULES_PKEY = Internal.createUniqueKey(PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, DSL.name("pricing_session_applied_rules_pkey"), new TableField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.ID }, true);
+    public static final UniqueKey<PricingSessionEntitiesRecord> PRICING_SESSION_ENTITIES_PKEY = Internal.createUniqueKey(PricingSessionEntities.PRICING_SESSION_ENTITIES, DSL.name("pricing_session_entities_pkey"), new TableField[] { PricingSessionEntities.PRICING_SESSION_ENTITIES.SESSION_ID, PricingSessionEntities.PRICING_SESSION_ENTITIES.CUSTOMER_ID }, true);
     public static final UniqueKey<PricingSessionLineItemsRecord> PRICING_SESSION_LINE_ITEMS_PKEY = Internal.createUniqueKey(PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, DSL.name("pricing_session_line_items_pkey"), new TableField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.ID }, true);
     public static final UniqueKey<PricingSessionsRecord> PRICING_SESSIONS_PKEY = Internal.createUniqueKey(PricingSessions.PRICING_SESSIONS, DSL.name("pricing_sessions_pkey"), new TableField[] { PricingSessions.PRICING_SESSIONS.ID }, true);
     public static final UniqueKey<PricingSessionsRecord> PRICING_SESSIONS_SESSION_NAME_KEY = Internal.createUniqueKey(PricingSessions.PRICING_SESSIONS, DSL.name("pricing_sessions_session_name_key"), new TableField[] { PricingSessions.PRICING_SESSIONS.SESSION_NAME }, true);
@@ -61,9 +71,14 @@ public class Keys {
     // FOREIGN KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final ForeignKey<CustomerPricingRulesRecord, CustomersRecord> CUSTOMER_PRICING_RULES__FK_CUSTOMER_PRICING_RULES_CUSTOMER = Internal.createForeignKey(CustomerPricingRules.CUSTOMER_PRICING_RULES, DSL.name("fk_customer_pricing_rules_customer"), new TableField[] { CustomerPricingRules.CUSTOMER_PRICING_RULES.CUSTOMER_ID }, Keys.CUSTOMERS_PKEY, new TableField[] { Customers.CUSTOMERS.CUSTOMER_ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
+    public static final ForeignKey<CustomerTagsRecord, CustomersRecord> CUSTOMER_TAGS__FK_CUSTOMER_TAGS_CUSTOMER = Internal.createForeignKey(CustomerTags.CUSTOMER_TAGS, DSL.name("fk_customer_tags_customer"), new TableField[] { CustomerTags.CUSTOMER_TAGS.CUSTOMER_ID }, Keys.CUSTOMERS_PKEY, new TableField[] { Customers.CUSTOMERS.CUSTOMER_ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
+    public static final ForeignKey<CustomersRecord, CustomersRecord> CUSTOMERS__FK_CUSTOMERS_PARENT = Internal.createForeignKey(Customers.CUSTOMERS, DSL.name("fk_customers_parent"), new TableField[] { Customers.CUSTOMERS.PARENT_ID }, Keys.CUSTOMERS_PKEY, new TableField[] { Customers.CUSTOMERS.CUSTOMER_ID }, true, ForeignKeyRule.NO_ACTION, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<ImportedLineItemsRecord, ImportSummaryRecord> IMPORTED_LINE_ITEMS__IMPORTED_LINE_ITEMS_IMPORT_ID_FKEY = Internal.createForeignKey(ImportedLineItems.IMPORTED_LINE_ITEMS, DSL.name("imported_line_items_import_id_fkey"), new TableField[] { ImportedLineItems.IMPORTED_LINE_ITEMS.IMPORT_ID }, Keys.IMPORT_SUMMARY_PKEY, new TableField[] { ImportSummary.IMPORT_SUMMARY.IMPORT_ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<PricingSessionAppliedRulesRecord, PricingSessionLineItemsRecord> PRICING_SESSION_APPLIED_RULES__FK_APPLIED_RULES_LINE_ITEM = Internal.createForeignKey(PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, DSL.name("fk_applied_rules_line_item"), new TableField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.SESSION_LINE_ITEM_ID }, Keys.PRICING_SESSION_LINE_ITEMS_PKEY, new TableField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<PricingSessionAppliedRulesRecord, PricingRuleRecord> PRICING_SESSION_APPLIED_RULES__FK_APPLIED_RULES_RULE = Internal.createForeignKey(PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES, DSL.name("fk_applied_rules_rule"), new TableField[] { PricingSessionAppliedRules.PRICING_SESSION_APPLIED_RULES.RULE_ID }, Keys.PRICING_RULE_PKEY, new TableField[] { PricingRule.PRICING_RULE.ID }, true, ForeignKeyRule.SET_NULL, ForeignKeyRule.NO_ACTION);
+    public static final ForeignKey<PricingSessionEntitiesRecord, CustomersRecord> PRICING_SESSION_ENTITIES__FK_PRICING_SESSION_ENTITIES_CUSTOMER = Internal.createForeignKey(PricingSessionEntities.PRICING_SESSION_ENTITIES, DSL.name("fk_pricing_session_entities_customer"), new TableField[] { PricingSessionEntities.PRICING_SESSION_ENTITIES.CUSTOMER_ID }, Keys.CUSTOMERS_PKEY, new TableField[] { Customers.CUSTOMERS.CUSTOMER_ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
+    public static final ForeignKey<PricingSessionEntitiesRecord, PricingSessionsRecord> PRICING_SESSION_ENTITIES__FK_PRICING_SESSION_ENTITIES_SESSION = Internal.createForeignKey(PricingSessionEntities.PRICING_SESSION_ENTITIES, DSL.name("fk_pricing_session_entities_session"), new TableField[] { PricingSessionEntities.PRICING_SESSION_ENTITIES.SESSION_ID }, Keys.PRICING_SESSIONS_PKEY, new TableField[] { PricingSessions.PRICING_SESSIONS.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<PricingSessionLineItemsRecord, PricingRuleRecord> PRICING_SESSION_LINE_ITEMS__FK_PRICING_SESSION_LINE_ITEMS_RULE = Internal.createForeignKey(PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, DSL.name("fk_pricing_session_line_items_rule"), new TableField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.APPLIED_RULE_ID }, Keys.PRICING_RULE_PKEY, new TableField[] { PricingRule.PRICING_RULE.ID }, true, ForeignKeyRule.SET_NULL, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<PricingSessionLineItemsRecord, PricingSessionsRecord> PRICING_SESSION_LINE_ITEMS__PRICING_SESSION_LINE_ITEMS_SESSION_ID_FKEY = Internal.createForeignKey(PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS, DSL.name("pricing_session_line_items_session_id_fkey"), new TableField[] { PricingSessionLineItems.PRICING_SESSION_LINE_ITEMS.SESSION_ID }, Keys.PRICING_SESSIONS_PKEY, new TableField[] { PricingSessions.PRICING_SESSIONS.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
 }

@@ -15,8 +15,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
- * Dynamic pricing rules for calculating sell prices with layered multi-rule
- * support
+ * Pricing rules with execution_order field for sequential rule application
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
@@ -136,67 +135,35 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
     }
 
     /**
-     * Setter for <code>public.pricing_rule.priority</code>. Lower number =
-     * higher priority. Used for sorting within same layer.
-     */
-    public void setPriority(Integer value) {
-        set(7, value);
-    }
-
-    /**
-     * Getter for <code>public.pricing_rule.priority</code>. Lower number =
-     * higher priority. Used for sorting within same layer.
-     */
-    public Integer getPriority() {
-        return (Integer) get(7);
-    }
-
-    /**
      * Setter for <code>public.pricing_rule.is_active</code>.
      */
     public void setIsActive(Boolean value) {
-        set(8, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>public.pricing_rule.is_active</code>.
      */
     public Boolean getIsActive() {
-        return (Boolean) get(8);
+        return (Boolean) get(7);
     }
 
     /**
-     * Setter for <code>public.pricing_rule.rule_category</code>. Category/layer
-     * of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT,
-     * PROMOTIONAL
+     * Setter for <code>public.pricing_rule.execution_order</code>. Execution
+     * order for rules (1, 2, 3...). Lower numbers execute first. Replaces the
+     * old priority/category/layer system.
      */
-    public void setRuleCategory(String value) {
-        set(9, value);
+    public void setExecutionOrder(Integer value) {
+        set(8, value);
     }
 
     /**
-     * Getter for <code>public.pricing_rule.rule_category</code>. Category/layer
-     * of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT,
-     * PROMOTIONAL
+     * Getter for <code>public.pricing_rule.execution_order</code>. Execution
+     * order for rules (1, 2, 3...). Lower numbers execute first. Replaces the
+     * old priority/category/layer system.
      */
-    public String getRuleCategory() {
-        return (String) get(9);
-    }
-
-    /**
-     * Setter for <code>public.pricing_rule.layer_order</code>. Execution order
-     * within the same rule_category. Lower number executes first.
-     */
-    public void setLayerOrder(Integer value) {
-        set(10, value);
-    }
-
-    /**
-     * Getter for <code>public.pricing_rule.layer_order</code>. Execution order
-     * within the same rule_category. Lower number executes first.
-     */
-    public Integer getLayerOrder() {
-        return (Integer) get(10);
+    public Integer getExecutionOrder() {
+        return (Integer) get(8);
     }
 
     /**
@@ -204,7 +171,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
      * rule becomes active. NULL means always active.
      */
     public void setValidFrom(LocalDate value) {
-        set(11, value);
+        set(9, value);
     }
 
     /**
@@ -212,7 +179,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
      * rule becomes active. NULL means always active.
      */
     public LocalDate getValidFrom() {
-        return (LocalDate) get(11);
+        return (LocalDate) get(9);
     }
 
     /**
@@ -220,7 +187,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
      * expires. NULL means never expires.
      */
     public void setValidTo(LocalDate value) {
-        set(12, value);
+        set(10, value);
     }
 
     /**
@@ -228,35 +195,35 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
      * expires. NULL means never expires.
      */
     public LocalDate getValidTo() {
-        return (LocalDate) get(12);
+        return (LocalDate) get(10);
     }
 
     /**
      * Setter for <code>public.pricing_rule.created_at</code>.
      */
     public void setCreatedAt(LocalDateTime value) {
-        set(13, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>public.pricing_rule.created_at</code>.
      */
     public LocalDateTime getCreatedAt() {
-        return (LocalDateTime) get(13);
+        return (LocalDateTime) get(11);
     }
 
     /**
      * Setter for <code>public.pricing_rule.updated_at</code>.
      */
     public void setUpdatedAt(LocalDateTime value) {
-        set(14, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>public.pricing_rule.updated_at</code>.
      */
     public LocalDateTime getUpdatedAt() {
-        return (LocalDateTime) get(14);
+        return (LocalDateTime) get(12);
     }
 
     // -------------------------------------------------------------------------
@@ -282,7 +249,7 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
     /**
      * Create a detached, initialised PricingRuleRecord
      */
-    public PricingRuleRecord(Long id, String ruleName, String customerCode, String conditionType, String conditionValue, String pricingMethod, BigDecimal pricingValue, Integer priority, Boolean isActive, String ruleCategory, Integer layerOrder, LocalDate validFrom, LocalDate validTo, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public PricingRuleRecord(Long id, String ruleName, String customerCode, String conditionType, String conditionValue, String pricingMethod, BigDecimal pricingValue, Boolean isActive, Integer executionOrder, LocalDate validFrom, LocalDate validTo, LocalDateTime createdAt, LocalDateTime updatedAt) {
         super(PricingRule.PRICING_RULE);
 
         setId(id);
@@ -292,10 +259,8 @@ public class PricingRuleRecord extends UpdatableRecordImpl<PricingRuleRecord> {
         setConditionValue(conditionValue);
         setPricingMethod(pricingMethod);
         setPricingValue(pricingValue);
-        setPriority(priority);
         setIsActive(isActive);
-        setRuleCategory(ruleCategory);
-        setLayerOrder(layerOrder);
+        setExecutionOrder(executionOrder);
         setValidFrom(validFrom);
         setValidTo(validTo);
         setCreatedAt(createdAt);

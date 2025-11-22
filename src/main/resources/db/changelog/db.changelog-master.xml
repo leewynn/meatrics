@@ -5,8 +5,9 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
+    <!-- Consolidated schema including all changes -->
     <include file="changes/001-initial-schema.sql" relativeToChangelogFile="true"/>
-    <include file="changes/018-add-applied-rule-text-column.sql" relativeToChangelogFile="true"/>
-    <include file="changes/019-create-applied-rules-audit-table.sql" relativeToChangelogFile="true"/>
-    <include file="changes/020-drop-applied-rule-column.sql" relativeToChangelogFile="true"/>
+    <include file="changes/021-simplify-pricing-rules-schema.sql" relativeToChangelogFile="true"/>
+    <include file="changes/022-remove-rule-category-from-applied-rules.sql" relativeToChangelogFile="true"/>
+    <include file="changes/023-drop-priority-column.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

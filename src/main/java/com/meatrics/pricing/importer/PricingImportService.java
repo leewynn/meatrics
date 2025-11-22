@@ -10,6 +10,7 @@ import com.meatrics.pricing.report.CostReportDTO;
 import com.meatrics.util.ExcelParsingUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -223,9 +224,13 @@ public class PricingImportService {
             // Skip header row, start from row 1
             for (int i = 6; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
-                if (shouldSkipLine(row)) continue;
-                if (endParsing(row)) break;
-                if(isNumeric(ExcelParsingUtil.getCellValueAsString(row.getCell(0)))) {
+                if (shouldSkipLine(row)) {
+                    continue;
+                }
+                if (endParsing(row)) {
+                    break;
+                }
+                if(isClientCodeAndNameLine(row)) {
                     clientCode = ExcelParsingUtil.getCellValueAsString(row.getCell(0));
                     clientName = ExcelParsingUtil.getCellValueAsString(row.getCell(1));
                     continue;
@@ -241,10 +246,10 @@ public class PricingImportService {
     }
 
     /**
-     * Parse Excel row to ImportedLineItem
-     *
-     * TODO: Adjust column indices based on your actual Excel format
-     *
+     * Parse Excel row to ImportedLineItem.
+     * Current column layout: 0=ProductCode, 1=Description, 2=Quantity, 3=Amount,
+     * 4=Cost, 7=InvoiceNumber, 8=TransactionDate.
+     * Update column indices if Excel format changes.
      */
     private ImportedLineItem parseRowToLineItem(String clientCode, String clientName, Row row, String filename, Long importId) {
         try {
@@ -270,14 +275,12 @@ public class PricingImportService {
             lineItem.setInvoiceNumber(ExcelParsingUtil.getCellValueAsString(row.getCell(7)));
             lineItem.setTransactionDate(ExcelParsingUtil.getCellValueAsDate(row.getCell(8)));
 
-
             lineItem.setRef1(ExcelParsingUtil.getCellValueAsString(row.getCell(9)));
             lineItem.setRef2(ExcelParsingUtil.getCellValueAsString(row.getCell(10)));
             lineItem.setRef3(ExcelParsingUtil.getCellValueAsString(row.getCell(11)));
             lineItem.setOutstandingAmount(ExcelParsingUtil.getCellValueAsBigDecimal(row.getCell(14)));
 
             return lineItem;
-
         } catch (Exception e) {
             log.warn("Failed to parse row {}: {}", row.getRowNum(), e.getMessage());
             return null;
@@ -291,12 +294,22 @@ public class PricingImportService {
         if (ExcelParsingUtil.getCellValueAsString(row.getCell(0)).equalsIgnoreCase("")) return true;
         if (ExcelParsingUtil.getCellValueAsString(row.getCell(0)).equalsIgnoreCase("SubTotal")) return true;
 
-
         return false;
     }
 
-    private boolean endParsing(Row row) {
+    private boolean endParsing(@NotNull Row row) {
         return (ExcelParsingUtil.getCellValueAsString(row.getCell(0)).equalsIgnoreCase("9999999"));
+    }
+
+    private boolean isClientCodeAndNameLine(@NotNull Row row) {
+       var cell0Value = ExcelParsingUtil.getCellValueAsString(row.getCell(0));
+       var isNumericFirstCell = isNumeric(cell0Value);
+
+       // Check if cells 2 and 3 are empty
+       var isNullThirdCell = ExcelParsingUtil.isCellEmpty(row.getCell(2));
+       var isNullFourthCell = ExcelParsingUtil.isCellEmpty(row.getCell(3));
+
+       return isNumericFirstCell && isNullThirdCell && isNullFourthCell;
     }
 
     private boolean isNumeric(String strNum) {

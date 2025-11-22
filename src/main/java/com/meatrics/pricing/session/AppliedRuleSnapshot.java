@@ -19,7 +19,6 @@ public class AppliedRuleSnapshot {
 
     // Immutable snapshot of rule at application time
     private String ruleName;
-    private String ruleCategory;      // BASE_PRICE, CUSTOMER_ADJUSTMENT, etc.
     private String pricingMethod;     // COST_PLUS_PERCENT, FIXED_PRICE, etc.
     private BigDecimal pricingValue;  // The multiplier or value used
 
@@ -37,13 +36,12 @@ public class AppliedRuleSnapshot {
     /**
      * Constructor for creating a snapshot from a rule application
      */
-    public AppliedRuleSnapshot(Long ruleId, String ruleName, String ruleCategory,
+    public AppliedRuleSnapshot(Long ruleId, String ruleName,
                                String pricingMethod, BigDecimal pricingValue,
                                Integer applicationOrder, BigDecimal inputPrice,
                                BigDecimal outputPrice) {
         this.ruleId = ruleId;
         this.ruleName = ruleName;
-        this.ruleCategory = ruleCategory;
         this.pricingMethod = pricingMethod;
         this.pricingValue = pricingValue;
         this.applicationOrder = applicationOrder;
@@ -82,14 +80,6 @@ public class AppliedRuleSnapshot {
 
     public void setRuleName(String ruleName) {
         this.ruleName = ruleName;
-    }
-
-    public String getRuleCategory() {
-        return ruleCategory;
-    }
-
-    public void setRuleCategory(String ruleCategory) {
-        this.ruleCategory = ruleCategory;
     }
 
     public String getPricingMethod() {
@@ -141,11 +131,12 @@ public class AppliedRuleSnapshot {
     }
 
     /**
-     * Check if this snapshot represents a rebate rule
+     * Check if this snapshot represents a rebate rule.
+     * A rebate is any COST_PLUS_PERCENT rule with a multiplier less than 1.0
+     * (e.g., 0.95 for 5% discount, 0.80 for 20% discount)
      */
     public boolean isRebate() {
-        return "CUSTOMER_ADJUSTMENT".equals(ruleCategory)
-            && "COST_PLUS_PERCENT".equals(pricingMethod)
+        return "COST_PLUS_PERCENT".equals(pricingMethod)
             && pricingValue != null
             && pricingValue.compareTo(BigDecimal.ONE) < 0;
     }

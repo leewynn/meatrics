@@ -40,6 +40,7 @@ public class PricingCalculator {
      * @return PricingApplicationResult with success/error counts
      */
     public PricingApplicationResult applyPricingRules(List<GroupedLineItem> items) {
+        log.info("Starting to apply pricing rules to {} items", items.size());
         int successCount = 0;
         int errorCount = 0;
 
@@ -49,8 +50,15 @@ public class PricingCalculator {
                 Customer customer = customerRepository.findByCustomerCode(item.getCustomerCode())
                         .orElse(null);
 
+                log.debug("Processing item: customer={}, product={}",
+                    item.getCustomerCode(), item.getProductCode());
+
                 // Calculate price using pricing engine with current date
                 PricingResult result = priceCalculationService.calculatePrice(item, LocalDate.now(), customer);
+
+                log.debug("Calculated price: {} (applied {} rules)",
+                    result.getCalculatedPrice(),
+                    result.getAppliedRules() != null ? result.getAppliedRules().size() : 0);
 
                 // Apply results to item - support multi-rule
                 item.setNewUnitSellPrice(result.getCalculatedPrice());
@@ -68,7 +76,8 @@ public class PricingCalculator {
             }
         }
 
-        log.info("Applied pricing rules: {} successful, {} errors", successCount, errorCount);
+        log.info("Applied pricing rules: {} successful, {} errors out of {} total items",
+            successCount, errorCount, items.size());
         return new PricingApplicationResult(successCount, errorCount);
     }
 

@@ -1,10 +1,11 @@
 package com.meatrics.pricing.calculation;
 
 import com.meatrics.pricing.customer.Customer;
+import com.meatrics.pricing.customer.CustomerPricingRule;
+import com.meatrics.pricing.customer.CustomerPricingRuleRepository;
 import com.meatrics.pricing.product.GroupedLineItem;
 import com.meatrics.pricing.rule.PricingRule;
 import com.meatrics.pricing.rule.PricingRuleRepository;
-import com.meatrics.pricing.rule.RuleCategory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,18 +28,17 @@ public class PriceCalculationService {
 
     private static final Logger log = LoggerFactory.getLogger(PriceCalculationService.class);
 
-    // Constants for GP% capping (removed from calculation, now only for warnings)
-    private static final BigDecimal MIN_GP = new BigDecimal("0.10"); // 10%
-    private static final BigDecimal MAX_GP = new BigDecimal("0.60"); // 60%
-
     // Warning thresholds for unusual GP% (configurable - used for alerts only, not enforcement)
     private static final BigDecimal WARNING_LOW_GP = new BigDecimal("0.05");  // 5% - warn if below
     private static final BigDecimal WARNING_HIGH_GP = new BigDecimal("0.70"); // 70% - warn if above
 
     private final PricingRuleRepository pricingRuleRepository;
+    private final CustomerPricingRuleRepository customerPricingRuleRepository;
 
-    public PriceCalculationService(PricingRuleRepository pricingRuleRepository) {
+    public PriceCalculationService(PricingRuleRepository pricingRuleRepository,
+                                   CustomerPricingRuleRepository customerPricingRuleRepository) {
         this.pricingRuleRepository = pricingRuleRepository;
+        this.customerPricingRuleRepository = customerPricingRuleRepository;
     }
 
     /**
@@ -55,12 +55,9 @@ public class PriceCalculationService {
     }
 
     /**
-     * Calculate price using layered multi-rule approach.
-     * Rules are applied layer by layer in category order:
-     * 1. BASE_PRICE - Sets initial sell price
-     * 2. CUSTOMER_ADJUSTMENT - Apply customer discounts/fees
-     * 3. PRODUCT_ADJUSTMENT - Apply product-specific fees
-     * 4. PROMOTIONAL - Apply promotional discounts
+     * Calculate price using sequential multi-rule approach.
+     * Rules are applied in execution order (1, 2, 3...), with each rule
+     * using the output price from the previous rule as its input.
      *
      * @param item The grouped line item with historical data
      * @param pricingDate The date for which to calculate pricing (for date-based rule filtering)
@@ -85,56 +82,34 @@ public class PriceCalculationService {
 
         int applicationOrder = 1; // Track order of rule application
 
-        // Apply rules layer by layer
-        for (RuleCategory category : RuleCategory.values()) {
-            List<PricingRule> layerRules = findMatchingRulesInLayer(item, category, pricingDate);
+        // Find all matching rules and apply them in execution order
+        List<PricingRule> matchingRules = findAllMatchingRules(item, pricingDate, customer);
 
-            if (category.isSingleRuleOnly()) {
-                // BASE_PRICE: only first matching rule applies
-                if (!layerRules.isEmpty()) {
-                    PricingRule rule = layerRules.get(0);
-                    BigDecimal inputPrice = currentPrice;
-                    currentPrice = applyRuleToPrice(currentPrice, rule, item);
-                    appliedRules.add(rule);
-                    intermediateResults.add(currentPrice);
+        log.debug("Found {} matching rules for product {} customer {}",
+                matchingRules.size(), item.getProductCode(), customer != null ? customer.getCustomerCode() : "N/A");
 
-                    // Create immutable snapshot
-                    ruleSnapshots.add(new com.meatrics.pricing.session.AppliedRuleSnapshot(
-                        rule.getId(),
-                        rule.getRuleName(),
-                        rule.getRuleCategory() != null ? rule.getRuleCategory().name() : category.name(),
-                        rule.getPricingMethod(),
-                        rule.getPricingValue(),
-                        applicationOrder++,
-                        inputPrice,
-                        currentPrice
-                    ));
+        // Apply all matching rules in execution order (1, 2, 3...)
+        for (PricingRule rule : matchingRules) {
+            BigDecimal inputPrice = currentPrice;
+            currentPrice = applyRuleToPrice(currentPrice, rule, item);
+            appliedRules.add(rule);
+            intermediateResults.add(currentPrice);
 
-                    log.debug("Applied {} rule: {} -> {}", category.getDisplayName(), rule.getRuleName(), currentPrice);
-                }
-            } else {
-                // Multiple rules can apply in this layer
-                for (PricingRule rule : layerRules) {
-                    BigDecimal inputPrice = currentPrice;
-                    currentPrice = applyRuleToPrice(currentPrice, rule, item);
-                    appliedRules.add(rule);
-                    intermediateResults.add(currentPrice);
+            // Create immutable snapshot
+            // For customer-specific rules (negative ID), use null to avoid FK constraint violation
+            Long snapshotRuleId = rule.getId() != null && rule.getId() < 0 ? null : rule.getId();
+            ruleSnapshots.add(new com.meatrics.pricing.session.AppliedRuleSnapshot(
+                snapshotRuleId,
+                rule.getRuleName(),
+                rule.getPricingMethod(),
+                rule.getPricingValue(),
+                applicationOrder++,
+                inputPrice,
+                currentPrice
+            ));
 
-                    // Create immutable snapshot
-                    ruleSnapshots.add(new com.meatrics.pricing.session.AppliedRuleSnapshot(
-                        rule.getId(),
-                        rule.getRuleName(),
-                        rule.getRuleCategory() != null ? rule.getRuleCategory().name() : category.name(),
-                        rule.getPricingMethod(),
-                        rule.getPricingValue(),
-                        applicationOrder++,
-                        inputPrice,
-                        currentPrice
-                    ));
-
-                    log.debug("Applied {} rule: {} -> {}", category.getDisplayName(), rule.getRuleName(), currentPrice);
-                }
-            }
+            log.debug("Applied rule #{} ({}): {} -> {}",
+                    rule.getExecutionOrder(), rule.getRuleName(), inputPrice, currentPrice);
         }
 
         // Store snapshots in the item for later persistence
@@ -157,85 +132,90 @@ public class PriceCalculationService {
     }
 
     /**
-     * DEPRECATED: Old single-rule calculation method for backward compatibility.
-     * This method implements the original first-match-wins strategy.
-     * New code should use calculatePrice(item, date, customer) for multi-rule support.
+     * Find all rules that match the item and are valid on the date.
+     * Simplified: no more category layers, just execution order.
+     *
+     * @param item The item to match against
+     * @param pricingDate The date for date-based filtering
+     * @param customer The customer (for customer-specific rules)
+     * @return List of matching rules, ordered by execution_order field
      */
-    @Deprecated
-    private PricingResult calculatePriceSingleRule(GroupedLineItem item, Customer customer) {
-        // Get the cost - use incomingCost if available, otherwise fall back to last cost
-        BigDecimal cost = item.getIncomingCost() != null
-            ? item.getIncomingCost()
-            : (item.getLastCost() != null ? item.getLastCost() : BigDecimal.ZERO);
+    private List<PricingRule> findAllMatchingRules(GroupedLineItem item, LocalDate pricingDate, Customer customer) {
+        List<PricingRule> allRules = new ArrayList<>();
 
-        // Get product information
-        String productCode = item.getProductCode();
-        String productCategory = item.getPrimaryGroup();  // Now populated from JOIN
-
-        // Get customer code for error messages and rule lookup
-        String customerCode = customer != null ? customer.getCustomerCode() : "NONE";
-
-        // STEP 1: Get customer-specific rules first, then standard rules
-        List<PricingRule> rules = new java.util.ArrayList<>();
-
-        if (customer != null && customer.getCustomerCode() != null) {
-            // Add customer-specific rules (if any exist)
-            rules.addAll(pricingRuleRepository.findByCustomerCode(customer.getCustomerCode()));
+        // Check if customer has custom pricing rules
+        boolean hasCustomerRules = false;
+        if (customer != null && customer.getCustomerId() != null) {
+            hasCustomerRules = customerPricingRuleRepository.hasRules(customer.getCustomerId());
+            log.debug("Customer {} has custom rules: {}", customer.getCustomerCode(), hasCustomerRules);
         }
 
-        // Add standard rules (customer_code IS NULL)
-        rules.addAll(pricingRuleRepository.findStandardRules());
+        // 1. Load customer-specific rules if customer is provided
+        if (customer != null && customer.getCustomerId() != null) {
+            List<CustomerPricingRule> customerRules = customerPricingRuleRepository.findActiveByCustomerId(customer.getCustomerId());
+            log.debug("Found {} active customer-specific rules for customer {}",
+                customerRules.size(), customer.getCustomerCode());
 
-        // Rules are already sorted by priority in repositories, but ensure consistency
-        rules.sort(java.util.Comparator.comparing(PricingRule::getPriority));
-
-        // STEP 2: Find first matching rule
-        for (PricingRule rule : rules) {
-            if (ruleMatchesProduct(rule, productCode, productCategory)) {
-                // Apply the pricing method
-                BigDecimal calculatedPrice = applyPricingMethod(
-                    rule.getPricingMethod(),
-                    rule.getPricingValue(),
-                    cost,
-                    item  // Pass item for MAINTAIN_GP_PERCENT method
-                );
-
-                // Format rule description for transparency
-                String ruleDescription = formatRuleDescription(rule, item);
-
-                return new PricingResult(cost, calculatedPrice, rule, ruleDescription);
+            // Convert CustomerPricingRule to PricingRule for processing
+            for (CustomerPricingRule custRule : customerRules) {
+                PricingRule convertedRule = convertCustomerRuleToPricingRule(custRule);
+                if (convertedRule != null) {
+                    allRules.add(convertedRule);
+                }
             }
         }
 
-        // STEP 4: No rule matched (should never happen if default rule exists)
-        throw new PricingException(
-            "No pricing rule matched for customer=" + customerCode +
-            ", product=" + productCode +
-            ". Ensure at least one default rule (ALL_PRODUCTS) exists."
-        );
+        // 2. Load global/system rules (only if customer doesn't have custom rules)
+        // Database already sorts by execution order, so no need to sort again
+        if (!hasCustomerRules) {
+            List<PricingRule> globalRules = pricingRuleRepository.findActiveRulesOnDate(pricingDate);
+            log.debug("Loaded {} active global rules valid on date {} from database",
+                globalRules.size(), pricingDate);
+
+            allRules.addAll(globalRules);
+        }
+
+        log.debug("Total rules before condition matching: {}", allRules.size());
+
+        // 3. Filter by condition matching (already sorted by database)
+        List<PricingRule> matchingRules = allRules.stream()
+                .filter(rule -> ruleMatchesItem(rule, item))
+                .collect(Collectors.toList());
+
+        log.debug("Rules after condition matching: {} (product={}, customer={})",
+            matchingRules.size(), item.getProductCode(), item.getCustomerCode());
+
+        return matchingRules;
     }
 
     /**
-     * Find all rules in a specific layer that match the item and are valid on the date.
-     *
-     * @param item The item to match against
-     * @param category The rule category/layer
-     * @param pricingDate The date for date-based filtering
-     * @return List of matching rules, ordered by layer_order
+     * Convert a CustomerPricingRule to a PricingRule for processing
+     * Simplified: no longer uses categories, just execution order
      */
-    private List<PricingRule> findMatchingRulesInLayer(GroupedLineItem item, RuleCategory category, LocalDate pricingDate) {
-        // Get all active rules in this category
-        List<PricingRule> categoryRules = pricingRuleRepository.findAll().stream()
-                .filter(r -> category.equals(r.getRuleCategory()))
-                .filter(r -> Boolean.TRUE.equals(r.getIsActive()))
-                .filter(r -> r.isValidOnDate(pricingDate))
-                .sorted(Comparator.comparing(PricingRule::getLayerOrder, Comparator.nullsLast(Comparator.naturalOrder())))
-                .collect(Collectors.toList());
+    private PricingRule convertCustomerRuleToPricingRule(CustomerPricingRule custRule) {
+        PricingRule rule = new PricingRule();
 
-        // Filter by condition matching
-        return categoryRules.stream()
-                .filter(rule -> ruleMatchesItem(rule, item))
-                .collect(Collectors.toList());
+        // Use negative ID to distinguish customer rules from global rules
+        rule.setId(custRule.getId() != null ? -custRule.getId() : null);
+        rule.setRuleName(custRule.getName());
+        rule.setPricingMethod(custRule.getRuleType());
+        rule.setPricingValue(custRule.getTargetValue());
+        rule.setExecutionOrder(custRule.getExecutionOrder());
+        rule.setIsActive(custRule.getIsActive());
+
+        // Set condition matching (PricingRule uses conditionType and conditionValue)
+        if (custRule.getAppliesToProduct() != null) {
+            rule.setConditionType("PRODUCT_CODE");
+            rule.setConditionValue(custRule.getAppliesToProduct());
+        } else if (custRule.getAppliesToCategory() != null) {
+            rule.setConditionType("CATEGORY");
+            rule.setConditionValue(custRule.getAppliesToCategory());
+        } else {
+            rule.setConditionType("ALL_PRODUCTS");
+            rule.setConditionValue(null);
+        }
+
+        return rule;
     }
 
     /**
@@ -270,36 +250,6 @@ public class PriceCalculationService {
                 return rule.getConditionValue() != null
                         && item.getProductCode() != null
                         && rule.getConditionValue().equalsIgnoreCase(item.getProductCode());
-
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * Check if a rule's condition matches the given product
-     * DEPRECATED: Use ruleMatchesItem() for new code.
-     */
-    @Deprecated
-    private boolean ruleMatchesProduct(PricingRule rule, String productCode, String productCategory) {
-        String conditionType = rule.getConditionType();
-        String conditionValue = rule.getConditionValue();
-
-        switch (conditionType) {
-            case "ALL_PRODUCTS":
-                return true;  // Always matches
-
-            case "CATEGORY":
-                // Match if product category equals condition value (case-insensitive)
-                return productCategory != null
-                    && conditionValue != null
-                    && productCategory.equalsIgnoreCase(conditionValue);
-
-            case "PRODUCT_CODE":
-                // Match if product code equals condition value (case-insensitive)
-                return productCode != null
-                    && conditionValue != null
-                    && productCode.equalsIgnoreCase(conditionValue);
 
             default:
                 return false;
@@ -342,33 +292,66 @@ public class PriceCalculationService {
                 return value;
 
             case "MAINTAIN_GP_PERCENT":
-                // For subsequent layers, this doesn't make sense - skip
-                // (MAINTAIN_GP should only be in BASE_PRICE layer)
+                // This rule should typically be the first rule applied
+                // For subsequent rules, it doesn't make sense to maintain GP% from a modified price
                 if (currentPrice.equals(item.getIncomingCost())) {
-                    // This is the first rule (BASE layer)
-                    BigDecimal gpPercent = calculateHistoricalGP(item);
-                    if (gpPercent == null) {
-                        gpPercent = value; // Use default from rule
-                    }
+                    // This is the first rule being applied
+                    BigDecimal historicalGP = calculateHistoricalGP(item);
 
-                    if (gpPercent == null) {
-                        log.warn("MAINTAIN_GP_PERCENT rule has no value and no historical GP%, skipping");
+                    if (historicalGP == null) {
+                        log.warn("MAINTAIN_GP_PERCENT rule requires historical pricing data, skipping");
                         return currentPrice;
                     }
 
-                    // price = cost / (1 - GP%)
-                    BigDecimal divisor = BigDecimal.ONE.subtract(gpPercent);
-                    if (divisor.compareTo(BigDecimal.ZERO) <= 0) {
-                        log.warn("Invalid GP% would cause division by zero or negative, skipping");
-                        return currentPrice; // Invalid GP%, don't apply
+                    // Apply adjustment to historical GP%
+                    // value is the adjustment (e.g., 0.03 for +3%, -0.02 for -2%, 0.00 for no adjustment)
+                    BigDecimal adjustment = value != null ? value : BigDecimal.ZERO;
+                    BigDecimal targetGP = historicalGP.add(adjustment);
+
+                    log.debug("MAINTAIN_GP_PERCENT: historical={}%, adjustment={}%, target={}%",
+                        historicalGP.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP),
+                        adjustment.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP),
+                        targetGP.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP));
+
+                    // Validate target GP% is reasonable (must be < 100% to avoid divide-by-zero)
+                    // Note: Negative GP% is allowed (selling below cost is a valid business scenario)
+                    if (targetGP.compareTo(BigDecimal.ONE) >= 0) {
+                        log.warn("Adjusted GP% is >= 100% ({}%), capping at 99% to prevent divide-by-zero",
+                            targetGP.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP));
+                        targetGP = new BigDecimal("0.99");
                     }
-                    // Use scale 6 for high precision in division
+
+                    // price = cost / (1 - GP%)
+                    BigDecimal divisor = BigDecimal.ONE.subtract(targetGP);
                     return item.getIncomingCost().divide(divisor, 6, RoundingMode.HALF_UP);
                 } else {
-                    // Not the base price, skip this rule type
-                    log.warn("MAINTAIN_GP_PERCENT rule in non-BASE layer, skipping");
+                    // This rule should only be applied as the first rule
+                    log.warn("MAINTAIN_GP_PERCENT rule not applied as first rule, skipping");
                     return currentPrice;
                 }
+
+            case "TARGET_GP_PERCENT":
+                // Always uses the specified target GP%, does not fall back to historical
+                // Can be used at any point in the rule execution sequence
+                if (value == null) {
+                    log.warn("TARGET_GP_PERCENT rule requires a target value, skipping");
+                    return currentPrice;
+                }
+
+                // price = cost / (1 - target_GP%)
+                // If this is the first rule, use incoming cost
+                // Otherwise, calculate GP% on current price from previous rule
+                BigDecimal costToUse = currentPrice.equals(item.getIncomingCost())
+                    ? item.getIncomingCost()
+                    : currentPrice;
+
+                BigDecimal divisor = BigDecimal.ONE.subtract(value);
+                if (divisor.compareTo(BigDecimal.ZERO) <= 0) {
+                    log.warn("Invalid target GP% would cause division by zero or negative, skipping");
+                    return currentPrice;
+                }
+                // Use scale 6 for high precision in division
+                return costToUse.divide(divisor, 6, RoundingMode.HALF_UP);
 
             default:
                 log.warn("Unknown pricing method: {}", method);
@@ -377,70 +360,8 @@ public class PriceCalculationService {
     }
 
     /**
-     * Apply pricing method calculation to determine sell price
-     * DEPRECATED: Use applyRuleToPrice() for new code.
-     */
-    @Deprecated
-    private BigDecimal applyPricingMethod(String method, BigDecimal value, BigDecimal cost, GroupedLineItem item) {
-        switch (method) {
-            case "COST_PLUS_PERCENT":
-                // value is stored as multiplier: 1.20 for 20% markup, 0.80 for -20% rebate
-                // Users enter percentages (20 or -20), but they're converted to multipliers before storage
-                // price = cost × multiplier
-                return cost.multiply(value).setScale(6, RoundingMode.HALF_UP);
-
-            case "COST_PLUS_FIXED":
-                // value = 2.50 for $2.50 addition
-                // price = cost + 2.50
-                return cost.add(value).setScale(6, RoundingMode.HALF_UP);
-
-            case "FIXED_PRICE":
-                // value = 28.50 for fixed $28.50
-                // price = 28.50 (ignore cost)
-                return value.setScale(6, RoundingMode.HALF_UP);
-
-            case "MAINTAIN_GP_PERCENT":
-                // value = 0.25 for 25% default GP%
-                // Try to calculate historical GP%, fall back to default if no history
-                BigDecimal historicalGP = calculateHistoricalGP(item);
-                BigDecimal gpToUse = historicalGP != null ? historicalGP : value;
-
-                // Log for debugging
-                log.debug("MAINTAIN_GP_PERCENT: product={}, historicalGP={}, gpToUse={}, cost={}, lastGP={}, lastAmount={}",
-                    item.getProductCode(),
-                    historicalGP != null ? historicalGP.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP) + "%" : "null",
-                    gpToUse.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP) + "%",
-                    cost,
-                    item.getLastGrossProfit(),
-                    item.getLastAmount());
-
-                // Don't cap GP% - maintain exact historical value
-                // Only prevent edge cases where GP% >= 100% (would cause division by zero)
-                if (gpToUse.compareTo(BigDecimal.ONE) >= 0) {
-                    // This is a data quality issue - cap to 99% to prevent calculation errors
-                    gpToUse = new BigDecimal("0.99");
-                }
-
-                BigDecimal divisor = BigDecimal.ONE.subtract(gpToUse);
-                BigDecimal calculatedPrice = cost.divide(divisor, 2, RoundingMode.HALF_UP);
-
-                // Log the result (with safety check for zero price)
-                if (calculatedPrice.compareTo(BigDecimal.ZERO) > 0) {
-                    BigDecimal resultGP = calculatedPrice.subtract(cost).divide(calculatedPrice, 4, RoundingMode.HALF_UP);
-                    log.debug("  Result: price={}, resultGP={}", calculatedPrice, resultGP.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP) + "%");
-                } else {
-                    log.debug("  Result: price={} (zero or negative - skipping GP% calculation)", calculatedPrice);
-                }
-
-                return calculatedPrice;
-
-            default:
-                throw new PricingException("Unknown pricing method: " + method);
-        }
-    }
-
-    /**
      * Format a description of all applied rules for display.
+     * Simplified: no longer uses categories, just shows rule names in execution order.
      */
     private String formatMultiRuleDescription(List<PricingRule> rules) {
         if (rules.isEmpty()) return "No rules";
@@ -448,25 +369,10 @@ public class PriceCalculationService {
             return formatRuleDescription(rules.get(0), null);
         }
 
-        // Multiple rules: show layer breakdown
-        StringBuilder sb = new StringBuilder();
-        Map<RuleCategory, List<PricingRule>> byCategory = rules.stream()
-                .collect(Collectors.groupingBy(PricingRule::getRuleCategory));
-
-        boolean first = true;
-        for (RuleCategory category : RuleCategory.values()) {
-            List<PricingRule> categoryRules = byCategory.get(category);
-            if (categoryRules != null && !categoryRules.isEmpty()) {
-                if (!first) sb.append(" + ");
-                sb.append(category.getDisplayName()).append(": ");
-                sb.append(categoryRules.stream()
-                        .map(PricingRule::getRuleName)
-                        .collect(Collectors.joining(", ")));
-                first = false;
-            }
-        }
-
-        return sb.toString();
+        // Multiple rules: show all rules in execution order
+        return rules.stream()
+                .map(PricingRule::getRuleName)
+                .collect(Collectors.joining(" → "));
     }
 
     /**
@@ -558,24 +464,6 @@ public class PriceCalculationService {
         // Allow negative GP% - maintain historical loss-leader or promotional pricing
         // Use scale 6 for high precision in GP% calculation
         return lastGrossProfit.divide(lastAmount, 6, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Cap gross profit percentage to a reasonable range (10%-60%).
-     * NOTE: No longer used for MAINTAIN_GP_PERCENT - that rule now uses exact historical GP%.
-     * Kept for potential use by other pricing methods.
-     *
-     * @param gp The gross profit percentage to cap
-     * @return The capped GP% within MIN_GP and MAX_GP range
-     */
-    private BigDecimal capGPPercent(BigDecimal gp) {
-        if (gp.compareTo(MIN_GP) < 0) {
-            return MIN_GP;
-        }
-        if (gp.compareTo(MAX_GP) > 0) {
-            return MAX_GP;
-        }
-        return gp;
     }
 
     /**

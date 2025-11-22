@@ -8,6 +8,14 @@
 -- This consolidated schema includes all tables, views, indexes, and constraints
 -- for the Meatrics pricing application. All pricing/cost columns use NUMERIC(19,6)
 -- for maximum precision (6 decimals) following enterprise ERP standards.
+--
+-- INCLUDES:
+-- - Core import/staging tables
+-- - Product cost management
+-- - Customer/group management with hierarchical support
+-- - Pricing sessions and rules
+-- - Multi-entity pricing session support
+-- - Audit trail for applied rules
 -- ============================================================================
 
 -- ============================================================================
@@ -164,7 +172,7 @@ CREATE INDEX idx_product_costs_active ON product_costs(is_active);
 CREATE INDEX idx_product_costs_group ON product_costs(primary_group);
 
 -- ============================================================================
--- SECTION 3: CUSTOMER TABLE
+-- SECTION 3: CUSTOMER TABLE WITH GROUP SUPPORT
 -- ============================================================================
 
 CREATE TABLE customers (
@@ -172,16 +180,81 @@ CREATE TABLE customers (
     customer_code VARCHAR(128) NOT NULL,
     customer_name VARCHAR(255) NOT NULL,
     customer_rating VARCHAR(50),
+
+    -- Group pricing support
+    entity_type VARCHAR(20) NOT NULL DEFAULT 'COMPANY',
+    parent_id BIGINT,
+
     notes TEXT,
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     CONSTRAINT uq_customer_code UNIQUE (customer_code)
 );
 
-COMMENT ON TABLE customers IS 'Customer master data with ratings for pricing analysis';
+COMMENT ON TABLE customers IS 'Customer master data with group hierarchy support';
 COMMENT ON COLUMN customers.customer_rating IS 'Customer rating category (e.g., A, B, C) for pricing and analysis';
+COMMENT ON COLUMN customers.entity_type IS 'Entity type: GROUP or COMPANY';
+COMMENT ON COLUMN customers.parent_id IS 'Reference to parent group if this company belongs to a group';
 
 CREATE INDEX idx_customers_code ON customers(customer_code);
+CREATE INDEX idx_customers_parent_id ON customers(parent_id);
+CREATE INDEX idx_customers_entity_type ON customers(entity_type);
+
+-- Add foreign key constraint for parent relationship
+ALTER TABLE customers
+ADD CONSTRAINT fk_customers_parent
+FOREIGN KEY (parent_id) REFERENCES customers(customer_id);
+
+-- ============================================================================
+-- SECTION 3.1: CUSTOMER TAGS TABLE
+-- ============================================================================
+
+CREATE TABLE customer_tags (
+    customer_id BIGINT NOT NULL,
+    tag VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (customer_id, tag),
+    CONSTRAINT fk_customer_tags_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE CASCADE
+);
+
+COMMENT ON TABLE customer_tags IS 'Business classification tags for customers (PRICE_FILE_CUSTOMER, HIGH_VALUE, etc.)';
+
+CREATE INDEX idx_customer_tags_tag ON customer_tags(tag);
+
+-- ============================================================================
+-- SECTION 3.2: CUSTOMER PRICING RULES TABLE
+-- ============================================================================
+
+CREATE TABLE customer_pricing_rules (
+    id BIGSERIAL PRIMARY KEY,
+    customer_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    rule_type VARCHAR(50) NOT NULL,
+    execution_order INT NOT NULL,
+    applies_to_category VARCHAR(100),
+    applies_to_product VARCHAR(100),
+    target_value NUMERIC(10,2),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_customer_pricing_rules_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE CASCADE,
+
+    UNIQUE(customer_id, execution_order)
+);
+
+COMMENT ON TABLE customer_pricing_rules IS 'Customer or group-specific pricing rules. Only groups (entity_type=GROUP) or standalone companies (parent_id IS NULL) should have rules.';
+COMMENT ON COLUMN customer_pricing_rules.execution_order IS 'Order in which rules are applied (lower numbers first)';
+
+CREATE INDEX idx_customer_pricing_rules_customer_id ON customer_pricing_rules(customer_id);
+CREATE INDEX idx_customer_pricing_rules_active ON customer_pricing_rules(is_active);
 
 -- ============================================================================
 -- SECTION 4: PRICING SESSIONS TABLES
@@ -202,6 +275,35 @@ COMMENT ON COLUMN pricing_sessions.session_name IS 'Unique name for the pricing 
 COMMENT ON COLUMN pricing_sessions.status IS 'Session status: IN_PROGRESS, COMPLETED, ARCHIVED';
 
 CREATE INDEX idx_pricing_sessions_session_name ON pricing_sessions(session_name);
+
+-- ============================================================================
+-- SECTION 4.1: PRICING SESSION ENTITIES (MULTI-ENTITY SUPPORT)
+-- ============================================================================
+
+CREATE TABLE pricing_session_entities (
+    session_id BIGINT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    PRIMARY KEY (session_id, customer_id),
+
+    CONSTRAINT fk_pricing_session_entities_session
+        FOREIGN KEY (session_id)
+        REFERENCES pricing_sessions(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_pricing_session_entities_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE CASCADE
+);
+
+COMMENT ON TABLE pricing_session_entities IS 'Maps pricing sessions to multiple customers/groups for multi-entity pricing';
+
+CREATE INDEX idx_pricing_session_entities_session_id ON pricing_session_entities(session_id);
+CREATE INDEX idx_pricing_session_entities_customer_id ON pricing_session_entities(customer_id);
+
+-- ============================================================================
+-- SECTION 4.2: PRICING SESSION LINE ITEMS
+-- ============================================================================
 
 -- Pricing session line items table (with 6-decimal precision)
 CREATE TABLE pricing_session_line_items (
@@ -257,7 +359,7 @@ CREATE INDEX idx_pricing_session_line_items_rule ON pricing_session_line_items(a
 -- ============================================================================
 -- SECTION 5: PRICING RULES TABLE
 -- ============================================================================
--- Includes layered multi-rule pricing support and date-based activation
+-- Global fallback pricing rules with layered multi-rule pricing support
 
 CREATE TABLE pricing_rule (
     id BIGSERIAL PRIMARY KEY,
@@ -293,7 +395,7 @@ CREATE TABLE pricing_rule (
         CHECK (valid_from IS NULL OR valid_to IS NULL OR valid_to >= valid_from)
 );
 
-COMMENT ON TABLE pricing_rule IS 'Dynamic pricing rules for calculating sell prices with layered multi-rule support';
+COMMENT ON TABLE pricing_rule IS 'Global fallback pricing rules. Used when customers have no customer_pricing_rules defined.';
 COMMENT ON COLUMN pricing_rule.rule_name IS 'User-friendly name for the rule';
 COMMENT ON COLUMN pricing_rule.customer_code IS 'NULL for standard rules, customer code for customer-specific rules';
 COMMENT ON COLUMN pricing_rule.condition_type IS 'Type of condition: ALL_PRODUCTS, CATEGORY, PRODUCT_CODE';
@@ -323,40 +425,46 @@ ADD CONSTRAINT fk_pricing_session_line_items_rule
 FOREIGN KEY (applied_rule_id) REFERENCES pricing_rule(id) ON DELETE SET NULL;
 
 -- ============================================================================
--- SECTION 6: MULTI-RULE TRACKING TABLE
+-- SECTION 6: APPLIED RULES AUDIT TABLE
 -- ============================================================================
 
-CREATE TABLE pricing_session_line_item_rules (
+CREATE TABLE pricing_session_applied_rules (
     id BIGSERIAL PRIMARY KEY,
-    line_item_id BIGINT NOT NULL,
-    rule_id BIGINT NOT NULL,
-    layer_category VARCHAR(50) NOT NULL,
-    application_order INT NOT NULL,
-    price_before NUMERIC(19,6) NOT NULL,
-    price_after NUMERIC(19,6) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    session_line_item_id BIGINT NOT NULL,
+    rule_id BIGINT,  -- Nullable: rule might be deleted later
 
-    CONSTRAINT fk_line_item_rules_line_item
-        FOREIGN KEY (line_item_id)
+    -- Immutable snapshot of rule at application time
+    rule_name VARCHAR(255) NOT NULL,
+    rule_category VARCHAR(50) NOT NULL,  -- BASE_PRICE, CUSTOMER_ADJUSTMENT, etc.
+    pricing_method VARCHAR(50) NOT NULL, -- COST_PLUS_PERCENT, FIXED_PRICE, etc.
+    pricing_value DECIMAL(15,6),         -- The multiplier or value used
+
+    -- Pricing chain tracking
+    application_order INT NOT NULL,      -- Order rule was applied (1, 2, 3...)
+    input_price DECIMAL(15,6) NOT NULL,  -- Price before this rule
+    output_price DECIMAL(15,6) NOT NULL, -- Price after this rule
+
+    -- Metadata
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Foreign keys
+    CONSTRAINT fk_applied_rules_line_item
+        FOREIGN KEY (session_line_item_id)
         REFERENCES pricing_session_line_items(id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_line_item_rules_rule
+    CONSTRAINT fk_applied_rules_rule
         FOREIGN KEY (rule_id)
         REFERENCES pricing_rule(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT uq_line_item_rule
-        UNIQUE (line_item_id, rule_id)
+        ON DELETE SET NULL  -- Keep audit trail even if rule deleted
 );
 
-COMMENT ON TABLE pricing_session_line_item_rules IS 'Tracks all pricing rules applied to each line item. Supports multi-rule layered pricing by recording the complete calculation chain.';
-COMMENT ON COLUMN pricing_session_line_item_rules.price_before IS 'Price before this rule was applied (6 decimal precision)';
-COMMENT ON COLUMN pricing_session_line_item_rules.price_after IS 'Price after this rule was applied (6 decimal precision)';
+COMMENT ON TABLE pricing_session_applied_rules IS 'Immutable audit trail of all pricing rules applied to line items';
 
-CREATE INDEX idx_line_item_rules_line_item ON pricing_session_line_item_rules(line_item_id);
-CREATE INDEX idx_line_item_rules_rule ON pricing_session_line_item_rules(rule_id);
-CREATE INDEX idx_line_item_rules_order ON pricing_session_line_item_rules(line_item_id, application_order);
+-- Indexes for performance
+CREATE INDEX idx_applied_rules_line_item ON pricing_session_applied_rules(session_line_item_id);
+CREATE INDEX idx_applied_rules_rule_id ON pricing_session_applied_rules(rule_id);
+CREATE INDEX idx_applied_rules_category ON pricing_session_applied_rules(rule_category);
 
 -- ============================================================================
 -- SECTION 7: VIEWS
@@ -438,14 +546,32 @@ WHERE invoice_number IS NOT NULL;
 -- Grouped line items view - aggregated by customer and product
 CREATE OR REPLACE VIEW v_grouped_line_items AS
 SELECT
-    customer_code,
-    customer_name,
-    product_code,
-    product_description,
-    SUM(quantity) as total_quantity,
-    SUM(amount) as total_amount,
-    SUM(cost) as total_cost
-FROM imported_line_items
-GROUP BY customer_code, customer_name, product_code, product_description;
+    ili.customer_code,
+    ili.customer_name,
+    ili.product_code,
+    ili.product_description,
+    pc.primary_group as category,
+    pc.unit_of_measure as unit,
+    SUM(ili.quantity) as total_quantity,
+    SUM(ili.amount) as total_amount,
+    SUM(ili.cost) as total_cost,
+    -- Calculate last price from most recent transaction
+    (SELECT ili2.amount / NULLIF(ili2.quantity, 0)
+     FROM imported_line_items ili2
+     WHERE ili2.customer_code = ili.customer_code
+       AND ili2.product_code = ili.product_code
+     ORDER BY ili2.transaction_date DESC, ili2.import_date DESC
+     LIMIT 1) as last_price,
+    -- Get current cost from product_costs
+    pc.standard_cost as current_cost,
+    -- Get customer_id from customers table if exists
+    c.customer_id
+FROM imported_line_items ili
+LEFT JOIN product_costs pc ON pc.product_code = ili.product_code
+LEFT JOIN customers c ON c.customer_code = ili.customer_code
+WHERE ili.customer_code IS NOT NULL
+  AND ili.product_code IS NOT NULL
+GROUP BY ili.customer_code, ili.customer_name, ili.product_code, ili.product_description,
+         pc.primary_group, pc.unit_of_measure, pc.standard_cost, c.customer_id;
 
-COMMENT ON VIEW v_grouped_line_items IS 'Aggregated line items grouped by customer and product for pricing sessions view';
+COMMENT ON VIEW v_grouped_line_items IS 'Aggregated line items grouped by customer and product for pricing sessions view. Includes category, unit, last_price, and current_cost.';

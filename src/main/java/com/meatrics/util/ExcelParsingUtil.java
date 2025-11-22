@@ -24,6 +24,33 @@ public final class ExcelParsingUtil {
     }
 
     /**
+     * Check if a cell is empty (null, blank, or contains only whitespace).
+     * This handles all the edge cases with Apache POI:
+     * - Null cells
+     * - BLANK cell type
+     * - STRING cells with empty content
+     * - STRING cells with only whitespace
+     * - NUMERIC cells with 0 (optional - can be configured)
+     *
+     * @param cell Excel cell to check
+     * @return true if cell is empty, false otherwise
+     */
+    public static boolean isCellEmpty(Cell cell) {
+        if (cell == null) {
+            return true;
+        }
+
+        // Check cell type first for performance
+        if (cell.getCellType() == CellType.BLANK) {
+            return true;
+        }
+
+        // For other types, get the value and check if it's empty
+        String value = getCellValueAsString(cell);
+        return value == null || value.trim().isEmpty();
+    }
+
+    /**
      * Extract cell value as String, handling different cell types safely.
      *
      * @param cell Excel cell to extract value from

@@ -13,7 +13,7 @@ import org.jooq.impl.TableRecordImpl;
 
 /**
  * Aggregated line items grouped by customer and product for pricing sessions
- * view
+ * view. Includes category, unit, last_price, and current_cost.
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class VGroupedLineItemsRecord extends TableRecordImpl<VGroupedLineItemsRecord> {
@@ -77,45 +77,115 @@ public class VGroupedLineItemsRecord extends TableRecordImpl<VGroupedLineItemsRe
     }
 
     /**
+     * Setter for <code>public.v_grouped_line_items.category</code>.
+     */
+    public void setCategory(String value) {
+        set(4, value);
+    }
+
+    /**
+     * Getter for <code>public.v_grouped_line_items.category</code>.
+     */
+    public String getCategory() {
+        return (String) get(4);
+    }
+
+    /**
+     * Setter for <code>public.v_grouped_line_items.unit</code>.
+     */
+    public void setUnit(String value) {
+        set(5, value);
+    }
+
+    /**
+     * Getter for <code>public.v_grouped_line_items.unit</code>.
+     */
+    public String getUnit() {
+        return (String) get(5);
+    }
+
+    /**
      * Setter for <code>public.v_grouped_line_items.total_quantity</code>.
      */
     public void setTotalQuantity(BigDecimal value) {
-        set(4, value);
+        set(6, value);
     }
 
     /**
      * Getter for <code>public.v_grouped_line_items.total_quantity</code>.
      */
     public BigDecimal getTotalQuantity() {
-        return (BigDecimal) get(4);
+        return (BigDecimal) get(6);
     }
 
     /**
      * Setter for <code>public.v_grouped_line_items.total_amount</code>.
      */
     public void setTotalAmount(BigDecimal value) {
-        set(5, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>public.v_grouped_line_items.total_amount</code>.
      */
     public BigDecimal getTotalAmount() {
-        return (BigDecimal) get(5);
+        return (BigDecimal) get(7);
     }
 
     /**
      * Setter for <code>public.v_grouped_line_items.total_cost</code>.
      */
     public void setTotalCost(BigDecimal value) {
-        set(6, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>public.v_grouped_line_items.total_cost</code>.
      */
     public BigDecimal getTotalCost() {
-        return (BigDecimal) get(6);
+        return (BigDecimal) get(8);
+    }
+
+    /**
+     * Setter for <code>public.v_grouped_line_items.last_price</code>.
+     */
+    public void setLastPrice(BigDecimal value) {
+        set(9, value);
+    }
+
+    /**
+     * Getter for <code>public.v_grouped_line_items.last_price</code>.
+     */
+    public BigDecimal getLastPrice() {
+        return (BigDecimal) get(9);
+    }
+
+    /**
+     * Setter for <code>public.v_grouped_line_items.current_cost</code>.
+     */
+    public void setCurrentCost(BigDecimal value) {
+        set(10, value);
+    }
+
+    /**
+     * Getter for <code>public.v_grouped_line_items.current_cost</code>.
+     */
+    public BigDecimal getCurrentCost() {
+        return (BigDecimal) get(10);
+    }
+
+    /**
+     * Setter for <code>public.v_grouped_line_items.customer_id</code>.
+     */
+    public void setCustomerId(Long value) {
+        set(11, value);
+    }
+
+    /**
+     * Getter for <code>public.v_grouped_line_items.customer_id</code>.
+     */
+    public Long getCustomerId() {
+        return (Long) get(11);
     }
 
     // -------------------------------------------------------------------------
@@ -132,16 +202,21 @@ public class VGroupedLineItemsRecord extends TableRecordImpl<VGroupedLineItemsRe
     /**
      * Create a detached, initialised VGroupedLineItemsRecord
      */
-    public VGroupedLineItemsRecord(String customerCode, String customerName, String productCode, String productDescription, BigDecimal totalQuantity, BigDecimal totalAmount, BigDecimal totalCost) {
+    public VGroupedLineItemsRecord(String customerCode, String customerName, String productCode, String productDescription, String category, String unit, BigDecimal totalQuantity, BigDecimal totalAmount, BigDecimal totalCost, BigDecimal lastPrice, BigDecimal currentCost, Long customerId) {
         super(VGroupedLineItems.V_GROUPED_LINE_ITEMS);
 
         setCustomerCode(customerCode);
         setCustomerName(customerName);
         setProductCode(productCode);
         setProductDescription(productDescription);
+        setCategory(category);
+        setUnit(unit);
         setTotalQuantity(totalQuantity);
         setTotalAmount(totalAmount);
         setTotalCost(totalCost);
+        setLastPrice(lastPrice);
+        setCurrentCost(currentCost);
+        setCustomerId(customerId);
         resetTouchedOnNotNull();
     }
 }

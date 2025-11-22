@@ -114,6 +114,39 @@ public class ProductCostRepository {
     }
 
     /**
+     * Find product costs by a collection of product codes
+     * Used for filtering products that appear in a specific dataset
+     */
+    public List<ProductCost> findByProductCodes(java.util.Collection<String> productCodes) {
+        if (productCodes == null || productCodes.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return dsl.selectFrom(PRODUCT_COSTS)
+                .where(PRODUCT_COSTS.PRODUCT_CODE.in(productCodes))
+                .fetch(this::mapToProductCost);
+    }
+
+    /**
+     * Find products by primary group (category)
+     */
+    public List<ProductCost> findByPrimaryGroup(String primaryGroup) {
+        return dsl.selectFrom(PRODUCT_COSTS)
+                .where(PRODUCT_COSTS.PRIMARY_GROUP.eq(primaryGroup))
+                .fetch(this::mapToProductCost);
+    }
+
+    /**
+     * Find product by product code
+     */
+    public java.util.Optional<ProductCost> findByProductCode(String productCode) {
+        return java.util.Optional.ofNullable(
+            dsl.selectFrom(PRODUCT_COSTS)
+                .where(PRODUCT_COSTS.PRODUCT_CODE.eq(productCode))
+                .fetchOne(this::mapToProductCost)
+        );
+    }
+
+    /**
      * Get distinct product categories (primary_group values)
      * Used for populating category dropdown in pricing rules
      */

@@ -58,6 +58,16 @@ public class ImportedLineItemRepository {
     }
 
     /**
+     * Find all line items by customer code
+     */
+    public List<ImportedLineItem> findByCustomerCode(String customerCode) {
+        return dsl.selectFrom(IMPORTED_LINE_ITEMS)
+                .where(IMPORTED_LINE_ITEMS.CUSTOMER_CODE.eq(customerCode))
+                .orderBy(IMPORTED_LINE_ITEMS.TRANSACTION_DATE.desc())
+                .fetch(this::mapToEntity);
+    }
+
+    /**
      * Find all line items
      */
     public List<ImportedLineItem> findAll() {

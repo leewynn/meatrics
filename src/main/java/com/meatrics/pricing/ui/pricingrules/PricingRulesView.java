@@ -5,8 +5,6 @@ import com.meatrics.pricing.customer.CustomerRepository;
 import com.meatrics.pricing.rule.PricingRule;
 import com.meatrics.pricing.rule.PricingRuleService;
 import com.meatrics.pricing.product.ProductCostRepository;
-import com.meatrics.pricing.rule.RuleCategory;
-import com.meatrics.pricing.ui.pricingrules.PricingRuleDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -23,7 +21,6 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -155,6 +152,13 @@ public class PricingRulesView extends VerticalLayout {
                 .setSortable(true)
                 .setKey("customerCode");
 
+        // Execution Order (replaces Category + Layer Order + Priority)
+        grid.addColumn(PricingRule::getExecutionOrder)
+                .setHeader("Execution Order")
+                .setKey("executionOrder")
+                .setWidth("120px")
+                .setSortable(true);
+
         // Pricing Method
         grid.addColumn(rule -> formatPricingMethod(rule.getPricingMethod(), rule.getPricingValue()))
                 .setHeader("Pricing Method")
@@ -162,30 +166,6 @@ public class PricingRulesView extends VerticalLayout {
                 .setFlexGrow(1)
                 .setSortable(true)
                 .setKey("pricingMethod");
-
-        // Priority
-        grid.addColumn(PricingRule::getPriority)
-                .setHeader("Priority")
-                .setAutoWidth(true)
-                .setSortable(true)
-                .setKey("priority");
-
-        // Category Column
-        grid.addColumn(rule -> {
-                    RuleCategory category = rule.getRuleCategory();
-                    return category != null ? category.getDisplayName() : "Base Price";
-                })
-                .setHeader("Category")
-                .setKey("category")
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        // Layer Order Column
-        grid.addColumn(PricingRule::getLayerOrder)
-                .setHeader("Layer Order")
-                .setKey("layerOrder")
-                .setAutoWidth(true)
-                .setSortable(true);
 
         // Status Column with Badge
         grid.addComponentColumn(rule -> {
@@ -262,6 +242,10 @@ public class PricingRulesView extends VerticalLayout {
      * Format pricing method for display
      */
     private String formatPricingMethod(String method, java.math.BigDecimal value) {
+        if (value == null) {
+            return method;
+        }
+
         switch (method) {
             case "COST_PLUS_PERCENT":
                 // Convert multiplier to percentage for display: 1.20 -> +20%, 0.80 -> -20%
@@ -274,8 +258,11 @@ public class PricingRulesView extends VerticalLayout {
             case "FIXED_PRICE":
                 return String.format("Fixed $%.2f", value);
             case "MAINTAIN_GP_PERCENT":
-                java.math.BigDecimal gpPercent = value.multiply(new java.math.BigDecimal("100"));
-                return String.format("Maintain GP%% (default %.0f%%)", gpPercent);
+                java.math.BigDecimal maintainGpPercent = value.multiply(new java.math.BigDecimal("100"));
+                return String.format("Maintain GP%% (%.0f%%)", maintainGpPercent);
+            case "TARGET_GP_PERCENT":
+                java.math.BigDecimal targetGpPercent = value.multiply(new java.math.BigDecimal("100"));
+                return String.format("Target %.0f%% GP", targetGpPercent);
             default:
                 return method;
         }
@@ -389,53 +376,42 @@ public class PricingRulesView extends VerticalLayout {
         content.setSpacing(true);
 
         // Introduction
-        Span intro = new Span("The pricing engine applies rules in a layered approach. Rules are organized into categories, and each category is applied in sequence.");
+        Span intro = new Span("The pricing engine applies rules sequentially in execution order (1, 2, 3...). Each rule uses the output price from the previous rule as its input.");
         intro.getStyle().set("margin-bottom", "16px");
         content.add(intro);
 
-        // Category 1: BASE_PRICE
-        VerticalLayout basePriceSection = createCategorySection(
-            "1. Base Price",
+        // Execution Order Explanation
+        VerticalLayout orderSection = createCategorySection(
+            "Execution Order",
             "#2196F3",
-            "💵",
-            "Establishes the initial selling price from cost.",
-            "Only ONE rule applies (first matching rule)",
-            "• Maintain GP% from last cycle\n• Cost + 20% markup\n• Category-specific pricing"
+            "📊",
+            "Rules execute in numerical order based on their execution_order field.",
+            "All matching rules apply in sequence",
+            "• Order 1: First rule (often base pricing)\n• Order 2: Second rule (adjustments)\n• Order 3+: Additional rules"
         );
-        content.add(basePriceSection);
+        content.add(orderSection);
 
-        // Category 2: CUSTOMER_ADJUSTMENT
-        VerticalLayout customerSection = createCategorySection(
-            "2. Customer Adjustment",
+        // Rule Types
+        VerticalLayout typesSection = createCategorySection(
+            "Rule Types",
             "#4CAF50",
+            "⚙️",
+            "Common pricing methods available:",
+            "Choose the appropriate method for your needs",
+            "• MAINTAIN_GP_PERCENT: Keep historical profit margin\n• COST_PLUS_PERCENT: Apply markup/discount (e.g., +20% or -10%)\n• COST_PLUS_FIXED: Add fixed amount (e.g., +$2.00)\n• FIXED_PRICE: Set absolute price"
+        );
+        content.add(typesSection);
+
+        // Customer-Specific Rules
+        VerticalLayout customerSection = createCategorySection(
+            "Customer-Specific Rules",
+            "#FF9800",
             "👤",
-            "Apply customer-specific discounts or fees.",
-            "Multiple rules CAN apply in sequence",
-            "• Volume discount (-10%)\n• Loyalty discount (-5%)\n• Customer rebate"
+            "Rules can apply to specific customers or all customers.",
+            "Customer-specific rules override standard rules",
+            "• Standard rules apply to all customers\n• Customer rules apply only to specific customers\n• Use execution order to control when they apply"
         );
         content.add(customerSection);
-
-        // Category 3: PRODUCT_ADJUSTMENT
-        VerticalLayout productSection = createCategorySection(
-            "3. Product Adjustment",
-            "#FF9800",
-            "📦",
-            "Apply product-specific fees or adjustments.",
-            "Multiple rules CAN apply in sequence",
-            "• Premium cut fee (+$2.00)\n• Packaging fee (+$1.50)\n• Processing charge"
-        );
-        content.add(productSection);
-
-        // Category 4: PROMOTIONAL
-        VerticalLayout promoSection = createCategorySection(
-            "4. Promotional",
-            "#E91E63",
-            "🏷️",
-            "Apply temporary promotional discounts.",
-            "Multiple rules CAN apply in sequence",
-            "• Seasonal sale (-15%)\n• Clearance discount (-20%)\n• Holiday special"
-        );
-        content.add(promoSection);
 
         // Example calculation
         VerticalLayout exampleSection = new VerticalLayout();
@@ -450,12 +426,11 @@ public class PricingRulesView extends VerticalLayout {
 
         Span exampleText = new Span(
             "Cost: $10.00\n" +
-            "→ Base Price (Cost + 20%): $12.00\n" +
-            "→ Customer Adjustment (Volume -10%): $10.80\n" +
-            "→ Customer Adjustment (Loyalty -5%): $10.26\n" +
-            "→ Product Adjustment (Premium +$2): $12.26\n" +
-            "→ Promotional (Sale -15%): $10.42\n" +
-            "\nFinal Price: $10.42"
+            "→ Rule 1 (Cost + 20% markup): $12.00\n" +
+            "→ Rule 2 (Volume -10% discount): $10.80\n" +
+            "→ Rule 3 (Premium cut +$2.00): $12.80\n" +
+            "→ Rule 4 (Seasonal -15% sale): $10.88\n" +
+            "\nFinal Price: $10.88"
         );
         exampleText.getStyle().set("font-family", "monospace").set("white-space", "pre");
 

@@ -7,6 +7,11 @@ package com.meatrics.generated.tables;
 import com.meatrics.generated.Indexes;
 import com.meatrics.generated.Keys;
 import com.meatrics.generated.Public;
+import com.meatrics.generated.tables.CustomerPricingRules.CustomerPricingRulesPath;
+import com.meatrics.generated.tables.CustomerTags.CustomerTagsPath;
+import com.meatrics.generated.tables.Customers.CustomersPath;
+import com.meatrics.generated.tables.PricingSessionEntities.PricingSessionEntitiesPath;
+import com.meatrics.generated.tables.PricingSessions.PricingSessionsPath;
 import com.meatrics.generated.tables.records.CustomersRecord;
 
 import java.time.LocalDateTime;
@@ -16,11 +21,15 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.Index;
+import org.jooq.InverseForeignKey;
 import org.jooq.Name;
+import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
+import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -35,7 +44,7 @@ import org.jooq.impl.TableImpl;
 
 
 /**
- * Customer master data with ratings for pricing analysis
+ * Customer master data with group hierarchy support
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Customers extends TableImpl<CustomersRecord> {
@@ -77,6 +86,18 @@ public class Customers extends TableImpl<CustomersRecord> {
     public final TableField<CustomersRecord, String> CUSTOMER_RATING = createField(DSL.name("customer_rating"), SQLDataType.VARCHAR(50), this, "Customer rating category (e.g., A, B, C) for pricing and analysis");
 
     /**
+     * The column <code>public.customers.entity_type</code>. Entity type: GROUP
+     * or COMPANY
+     */
+    public final TableField<CustomersRecord, String> ENTITY_TYPE = createField(DSL.name("entity_type"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'COMPANY'::character varying"), SQLDataType.VARCHAR)), this, "Entity type: GROUP or COMPANY");
+
+    /**
+     * The column <code>public.customers.parent_id</code>. Reference to parent
+     * group if this company belongs to a group
+     */
+    public final TableField<CustomersRecord, Long> PARENT_ID = createField(DSL.name("parent_id"), SQLDataType.BIGINT, this, "Reference to parent group if this company belongs to a group");
+
+    /**
      * The column <code>public.customers.notes</code>.
      */
     public final TableField<CustomersRecord, String> NOTES = createField(DSL.name("notes"), SQLDataType.CLOB, this, "");
@@ -96,7 +117,7 @@ public class Customers extends TableImpl<CustomersRecord> {
     }
 
     private Customers(Name alias, Table<CustomersRecord> aliased, Field<?>[] parameters, Condition where) {
-        super(alias, null, aliased, parameters, DSL.comment("Customer master data with ratings for pricing analysis"), TableOptions.table(), where);
+        super(alias, null, aliased, parameters, DSL.comment("Customer master data with group hierarchy support"), TableOptions.table(), where);
     }
 
     /**
@@ -120,6 +141,39 @@ public class Customers extends TableImpl<CustomersRecord> {
         this(DSL.name("customers"), null);
     }
 
+    public <O extends Record> Customers(Table<O> path, ForeignKey<O, CustomersRecord> childPath, InverseForeignKey<O, CustomersRecord> parentPath) {
+        super(path, childPath, parentPath, CUSTOMERS);
+    }
+
+    /**
+     * A subtype implementing {@link Path} for simplified path-based joins.
+     */
+    public static class CustomersPath extends Customers implements Path<CustomersRecord> {
+
+        private static final long serialVersionUID = 1L;
+        public <O extends Record> CustomersPath(Table<O> path, ForeignKey<O, CustomersRecord> childPath, InverseForeignKey<O, CustomersRecord> parentPath) {
+            super(path, childPath, parentPath);
+        }
+        private CustomersPath(Name alias, Table<CustomersRecord> aliased) {
+            super(alias, aliased);
+        }
+
+        @Override
+        public CustomersPath as(String alias) {
+            return new CustomersPath(DSL.name(alias), this);
+        }
+
+        @Override
+        public CustomersPath as(Name alias) {
+            return new CustomersPath(alias, this);
+        }
+
+        @Override
+        public CustomersPath as(Table<?> alias) {
+            return new CustomersPath(alias.getQualifiedName(), this);
+        }
+    }
+
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -127,7 +181,7 @@ public class Customers extends TableImpl<CustomersRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_CUSTOMERS_CODE);
+        return Arrays.asList(Indexes.IDX_CUSTOMERS_CODE, Indexes.IDX_CUSTOMERS_ENTITY_TYPE, Indexes.IDX_CUSTOMERS_PARENT_ID);
     }
 
     @Override
@@ -143,6 +197,70 @@ public class Customers extends TableImpl<CustomersRecord> {
     @Override
     public List<UniqueKey<CustomersRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UQ_CUSTOMER_CODE);
+    }
+
+    @Override
+    public List<ForeignKey<CustomersRecord, ?>> getReferences() {
+        return Arrays.asList(Keys.CUSTOMERS__FK_CUSTOMERS_PARENT);
+    }
+
+    private transient CustomersPath _customers;
+
+    /**
+     * Get the implicit join path to the <code>public.customers</code> table.
+     */
+    public CustomersPath customers() {
+        if (_customers == null)
+            _customers = new CustomersPath(this, Keys.CUSTOMERS__FK_CUSTOMERS_PARENT, null);
+
+        return _customers;
+    }
+
+    private transient CustomerPricingRulesPath _customerPricingRules;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.customer_pricing_rules</code> table
+     */
+    public CustomerPricingRulesPath customerPricingRules() {
+        if (_customerPricingRules == null)
+            _customerPricingRules = new CustomerPricingRulesPath(this, null, Keys.CUSTOMER_PRICING_RULES__FK_CUSTOMER_PRICING_RULES_CUSTOMER.getInverseKey());
+
+        return _customerPricingRules;
+    }
+
+    private transient CustomerTagsPath _customerTags;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.customer_tags</code> table
+     */
+    public CustomerTagsPath customerTags() {
+        if (_customerTags == null)
+            _customerTags = new CustomerTagsPath(this, null, Keys.CUSTOMER_TAGS__FK_CUSTOMER_TAGS_CUSTOMER.getInverseKey());
+
+        return _customerTags;
+    }
+
+    private transient PricingSessionEntitiesPath _pricingSessionEntities;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.pricing_session_entities</code> table
+     */
+    public PricingSessionEntitiesPath pricingSessionEntities() {
+        if (_pricingSessionEntities == null)
+            _pricingSessionEntities = new PricingSessionEntitiesPath(this, null, Keys.PRICING_SESSION_ENTITIES__FK_PRICING_SESSION_ENTITIES_CUSTOMER.getInverseKey());
+
+        return _pricingSessionEntities;
+    }
+
+    /**
+     * Get the implicit many-to-many join path to the
+     * <code>public.pricing_sessions</code> table
+     */
+    public PricingSessionsPath pricingSessions() {
+        return pricingSessionEntities().pricingSessions();
     }
 
     @Override

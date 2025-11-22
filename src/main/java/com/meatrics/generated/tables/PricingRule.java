@@ -45,8 +45,7 @@ import org.jooq.impl.TableImpl;
 
 
 /**
- * Dynamic pricing rules for calculating sell prices with layered multi-rule
- * support
+ * Pricing rules with execution_order field for sequential rule application
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class PricingRule extends TableImpl<PricingRuleRecord> {
@@ -109,28 +108,16 @@ public class PricingRule extends TableImpl<PricingRuleRecord> {
     public final TableField<PricingRuleRecord, BigDecimal> PRICING_VALUE = createField(DSL.name("pricing_value"), SQLDataType.NUMERIC(19, 6), this, "Pricing value with 6 decimal precision (multipliers, fixed amounts, GP percentages)");
 
     /**
-     * The column <code>public.pricing_rule.priority</code>. Lower number =
-     * higher priority. Used for sorting within same layer.
-     */
-    public final TableField<PricingRuleRecord, Integer> PRIORITY = createField(DSL.name("priority"), SQLDataType.INTEGER.nullable(false), this, "Lower number = higher priority. Used for sorting within same layer.");
-
-    /**
      * The column <code>public.pricing_rule.is_active</code>.
      */
     public final TableField<PricingRuleRecord, Boolean> IS_ACTIVE = createField(DSL.name("is_active"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "");
 
     /**
-     * The column <code>public.pricing_rule.rule_category</code>. Category/layer
-     * of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT,
-     * PROMOTIONAL
+     * The column <code>public.pricing_rule.execution_order</code>. Execution
+     * order for rules (1, 2, 3...). Lower numbers execute first. Replaces the
+     * old priority/category/layer system.
      */
-    public final TableField<PricingRuleRecord, String> RULE_CATEGORY = createField(DSL.name("rule_category"), SQLDataType.VARCHAR(50).nullable(false).defaultValue(DSL.field(DSL.raw("'BASE_PRICE'::character varying"), SQLDataType.VARCHAR)), this, "Category/layer of the pricing rule: BASE_PRICE, CUSTOMER_ADJUSTMENT, PRODUCT_ADJUSTMENT, PROMOTIONAL");
-
-    /**
-     * The column <code>public.pricing_rule.layer_order</code>. Execution order
-     * within the same rule_category. Lower number executes first.
-     */
-    public final TableField<PricingRuleRecord, Integer> LAYER_ORDER = createField(DSL.name("layer_order"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "Execution order within the same rule_category. Lower number executes first.");
+    public final TableField<PricingRuleRecord, Integer> EXECUTION_ORDER = createField(DSL.name("execution_order"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "Execution order for rules (1, 2, 3...). Lower numbers execute first. Replaces the old priority/category/layer system.");
 
     /**
      * The column <code>public.pricing_rule.valid_from</code>. Date when this
@@ -159,7 +146,7 @@ public class PricingRule extends TableImpl<PricingRuleRecord> {
     }
 
     private PricingRule(Name alias, Table<PricingRuleRecord> aliased, Field<?>[] parameters, Condition where) {
-        super(alias, null, aliased, parameters, DSL.comment("Dynamic pricing rules for calculating sell prices with layered multi-rule support"), TableOptions.table(), where);
+        super(alias, null, aliased, parameters, DSL.comment("Pricing rules with execution_order field for sequential rule application"), TableOptions.table(), where);
     }
 
     /**
@@ -223,7 +210,7 @@ public class PricingRule extends TableImpl<PricingRuleRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_PRICING_RULE_ACTIVE, Indexes.IDX_PRICING_RULE_CATEGORY, Indexes.IDX_PRICING_RULE_CONDITION_TYPE, Indexes.IDX_PRICING_RULE_CUSTOMER_CODE, Indexes.IDX_PRICING_RULE_DATES, Indexes.IDX_PRICING_RULE_MATCHING, Indexes.IDX_PRICING_RULE_PRIORITY);
+        return Arrays.asList(Indexes.IDX_PRICING_RULE_ACTIVE, Indexes.IDX_PRICING_RULE_CONDITION_TYPE, Indexes.IDX_PRICING_RULE_CUSTOMER_CODE, Indexes.IDX_PRICING_RULE_DATES, Indexes.IDX_PRICING_RULE_EXECUTION_ORDER);
     }
 
     @Override

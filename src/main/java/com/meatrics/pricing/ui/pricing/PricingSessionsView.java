@@ -3,6 +3,7 @@ package com.meatrics.pricing.ui.pricing;
 import com.meatrics.base.ui.MainLayout;
 import com.meatrics.pricing.customer.Customer;
 import com.meatrics.pricing.customer.CustomerRepository;
+import com.meatrics.pricing.customer.CustomerTagRepository;
 import com.meatrics.pricing.product.GroupedLineItem;
 import com.meatrics.pricing.importer.PricingImportService;
 import com.meatrics.pricing.session.PricingSession;
@@ -37,6 +38,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Redesigned Pricing Sessions view with rule-based pricing engine integration.
@@ -54,6 +58,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
     // Injected services
     private final PricingImportService pricingImportService;
     private final CustomerRepository customerRepository;
+    private final CustomerTagRepository customerTagRepository;
     private final PricingSessionManager sessionManager;
     private final PricingDialogFactory dialogFactory;
     private final PricingGridColumnManager columnManager;
@@ -65,6 +70,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
     private final Grid<GroupedLineItem> dataGrid;
     private final DatePicker startDatePicker;
     private final DatePicker endDatePicker;
+    private com.vaadin.flow.component.combobox.MultiSelectComboBox<Customer> entitySelector;
     private final TextField customerNameFilter;
     private final TextField productFilter;
     private H2 titleComponent;
@@ -84,6 +90,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
 
     public PricingSessionsView(PricingImportService pricingImportService,
                               CustomerRepository customerRepository,
+                              CustomerTagRepository customerTagRepository,
                               PricingSessionManager sessionManager,
                               PricingDialogFactory dialogFactory,
                               PricingGridColumnManager columnManager,
@@ -92,6 +99,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
                               PricingSessionService pricingSessionService) {
         this.pricingImportService = pricingImportService;
         this.customerRepository = customerRepository;
+        this.customerTagRepository = customerTagRepository;
         this.sessionManager = sessionManager;
         this.dialogFactory = dialogFactory;
         this.columnManager = columnManager;
@@ -168,6 +176,43 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
             }
         });
 
+        // Entity selector (groups + standalone companies)
+        entitySelector = new com.vaadin.flow.component.combobox.MultiSelectComboBox<>("Select Customers/Groups");
+        entitySelector.setPlaceholder("Select entities to price...");
+        entitySelector.setWidth("400px");
+
+        // Load and organize selectable entities with dividers
+        List<Customer> organizedEntities = organizeEntitiesForDropdown();
+        entitySelector.setItems(organizedEntities);
+
+        // Custom label generator with dividers
+        entitySelector.setItemLabelGenerator(customer -> {
+            String name = customer.getCustomerName();
+
+            // Check if this is a divider marker (using special naming convention)
+            if (name != null && name.startsWith("---DIVIDER")) {
+                return "──────────────────────────────────";
+            }
+
+            if (customer.isGroup()) {
+                return "[GROUP] " + name;
+            }
+            return name;
+        });
+
+        // Prevent dividers from being selected
+        entitySelector.addValueChangeListener(event -> {
+            Set<Customer> selected = event.getValue();
+            Set<Customer> validSelections = selected.stream()
+                    .filter(c -> c.getCustomerId() != null && c.getCustomerId() > 0)
+                    .collect(Collectors.toSet());
+
+            // If any dividers were selected, remove them
+            if (selected.size() != validSelections.size()) {
+                entitySelector.setValue(validSelections);
+            }
+        });
+
         Button applyFilterButton = new Button("Search", new Icon(VaadinIcon.FILTER));
         applyFilterButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         applyFilterButton.addClickListener(event -> applyFilter());
@@ -177,7 +222,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
         applyRulesButton.addClickListener(event -> handleApplyRules());
 
         HorizontalLayout dateFilterLayout = new HorizontalLayout(
-                startDatePicker, endDatePicker, applyFilterButton, applyRulesButton);
+                startDatePicker, endDatePicker, entitySelector, applyFilterButton, applyRulesButton);
         dateFilterLayout.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         dateFilterLayout.setSpacing(true);
 
@@ -378,7 +423,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
                     return cost1.compareTo(cost2);
                 })
                 .setSortable(true)
-                .setClassNameGenerator(item -> "new-pricing");
+                .setPartNameGenerator(item -> "new-pricing");
 
         columns.newPriceCol = grid.addComponentColumn(item -> createNewPriceCell(item))
                 .setHeader(createHeaderWithTooltip("Price", "Proposed unit sell price (calculated by rules or manually set)"))
@@ -389,12 +434,12 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
                     return price1.compareTo(price2);
                 })
                 .setSortable(true)
-                .setClassNameGenerator(item -> "new-pricing");
+                .setPartNameGenerator(item -> "new-pricing");
 
         columns.newAmountCol = grid.addColumn(item -> calculator.formatCurrency(item.getNewAmount()))
                 .setHeader(createHeaderWithTooltip("Amount", "Projected total revenue: New Price × Quantity"))
                 .setKey("newAmount").setAutoWidth(true).setResizable(true).setSortable(true)
-                .setClassNameGenerator(item -> "new-pricing");
+                .setPartNameGenerator(item -> "new-pricing");
 
         columns.newGPCol = grid.addComponentColumn(item -> createNewGPCell(item))
                 .setHeader(createHeaderWithTooltip("GP $", "Projected gross profit: New Amount - (New Cost × Quantity)"))
@@ -405,7 +450,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
                     return gp1.compareTo(gp2);
                 })
                 .setSortable(true)
-                .setClassNameGenerator(item -> "new-pricing");
+                .setPartNameGenerator(item -> "new-pricing");
 
         columns.newGPPercentCol = grid.addComponentColumn(item -> createNewGPPercentCell(item))
                 .setHeader(createHeaderWithTooltip("GP %", "Projected margin: (New GP $ / New Amount) × 100. Green = improved, Red = decreased"))
@@ -419,7 +464,7 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
                     return gp1.compareTo(gp2);
                 })
                 .setSortable(true)
-                .setClassNameGenerator(item -> "new-pricing");
+                .setPartNameGenerator(item -> "new-pricing");
 
         // NOTES column
         columns.notesCol = grid.addColumn(item ->
@@ -662,6 +707,78 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
     }
 
     /**
+     * Organize entities for dropdown with dividers:
+     * 1. Groups (all groups alphabetically)
+     * 2. Divider
+     * 3. Price File Customers (companies with PRICE_FILE_CUSTOMER tag)
+     * 4. Divider
+     * 5. Other Customers (remaining standalone companies)
+     */
+    private List<Customer> organizeEntitiesForDropdown() {
+        List<Customer> organized = new ArrayList<>();
+
+        // Get all selectable entities (groups + standalone companies)
+        List<Customer> allEntities = customerRepository.findAllSelectableForPricing();
+
+        // Separate into categories
+        List<Customer> groups = new ArrayList<>();
+        List<Customer> priceFileCustomers = new ArrayList<>();
+        List<Customer> otherCustomers = new ArrayList<>();
+
+        for (Customer entity : allEntities) {
+            if (entity.isGroup()) {
+                groups.add(entity);
+            } else {
+                // Check if this customer has PRICE_FILE_CUSTOMER tag
+                Set<String> tags = customerTagRepository.findTagsByCustomerId(entity.getCustomerId());
+                if (tags.contains("PRICE_FILE_CUSTOMER")) {
+                    priceFileCustomers.add(entity);
+                } else {
+                    otherCustomers.add(entity);
+                }
+            }
+        }
+
+        // Sort each category alphabetically
+        groups.sort((a, b) -> a.getCustomerName().compareTo(b.getCustomerName()));
+        priceFileCustomers.sort((a, b) -> a.getCustomerName().compareTo(b.getCustomerName()));
+        otherCustomers.sort((a, b) -> a.getCustomerName().compareTo(b.getCustomerName()));
+
+        // Add groups
+        organized.addAll(groups);
+
+        // Add divider after groups if there are price file customers or other customers
+        if (!priceFileCustomers.isEmpty() || !otherCustomers.isEmpty()) {
+            organized.add(createDivider("---DIVIDER-1"));
+        }
+
+        // Add price file customers
+        organized.addAll(priceFileCustomers);
+
+        // Add divider after price file customers if there are other customers
+        if (!priceFileCustomers.isEmpty() && !otherCustomers.isEmpty()) {
+            organized.add(createDivider("---DIVIDER-2"));
+        }
+
+        // Add other customers
+        organized.addAll(otherCustomers);
+
+        return organized;
+    }
+
+    /**
+     * Create a divider marker customer (not a real customer, just for visual separation)
+     */
+    private Customer createDivider(String id) {
+        Customer divider = new Customer();
+        divider.setCustomerId(-1L); // Use negative ID to indicate it's not a real customer
+        divider.setCustomerCode(id);
+        divider.setCustomerName(id);
+        divider.setEntityType("DIVIDER");
+        return divider;
+    }
+
+    /**
      * Apply date range filter
      */
     private void applyFilter() {
@@ -669,10 +786,81 @@ public class PricingSessionsView extends VerticalLayout implements BeforeLeaveOb
         LocalDate endDate = endDatePicker.getValue();
 
         if (dataGrid != null) {
-            backingList = filterManager.applyDateFilter(startDate, endDate);
+            // Get selected entities and filter out dividers
+            List<Customer> selectedEntities = entitySelector.getSelectedItems().stream()
+                    .filter(c -> c.getCustomerId() != null && c.getCustomerId() > 0) // Exclude dividers (negative IDs)
+                    .collect(Collectors.toList());
+
+            // Load data for selected entities (or all data if none selected)
+            backingList = filterManager.loadDataForEntities(selectedEntities, startDate, endDate);
+
+            // Check for price inconsistencies in groups
+            if (!selectedEntities.isEmpty()) {
+                Map<Long, List<PricingFilterManager.PriceMismatch>> inconsistencies =
+                        filterManager.detectGroupPriceInconsistencies(selectedEntities);
+
+                if (!inconsistencies.isEmpty()) {
+                    showPriceInconsistencyWarning(inconsistencies);
+                }
+            }
+
             applySecondaryFilters();
             sessionManager.saveToSession(backingList, currentSession, hasUnsavedChanges);
         }
+    }
+
+    /**
+     * Show warning dialog for price inconsistencies in groups
+     */
+    private void showPriceInconsistencyWarning(Map<Long, List<PricingFilterManager.PriceMismatch>> inconsistencies) {
+        int totalMismatches = inconsistencies.values().stream()
+                .mapToInt(List::size)
+                .sum();
+
+        StringBuilder message = new StringBuilder();
+        message.append(String.format("Found %d product(s) with price inconsistencies across group companies:\n\n", totalMismatches));
+
+        for (Map.Entry<Long, List<PricingFilterManager.PriceMismatch>> entry : inconsistencies.entrySet()) {
+            Long groupId = entry.getKey();
+            Customer group = customerRepository.findById(groupId).orElse(null);
+            String groupName = group != null ? group.getCustomerName() : "Unknown Group";
+
+            message.append(String.format("Group: %s\n", groupName));
+            for (PricingFilterManager.PriceMismatch mismatch : entry.getValue()) {
+                message.append(String.format("  • %s (%s): ", mismatch.getProductName(), mismatch.getProductCode()));
+                List<String> priceList = mismatch.getPrices().stream()
+                        .map(p -> String.format("%s: $%.2f", p.getCompanyCode(), p.getLastPrice()))
+                        .collect(Collectors.toList());
+                message.append(String.join(", ", priceList));
+                message.append("\n");
+            }
+            message.append("\n");
+        }
+
+        message.append("This may be due to recent acquisitions. Group pricing will apply to all products going forward.");
+
+        Notification notification = new Notification();
+        notification.setDuration(0); // Stay until dismissed
+        notification.setPosition(Notification.Position.MIDDLE);
+
+        VerticalLayout notificationLayout = new VerticalLayout();
+        notificationLayout.setSpacing(true);
+        notificationLayout.setPadding(true);
+        notificationLayout.setMaxWidth("600px");
+
+        Span headerSpan = new Span("⚠️ Price Inconsistencies Detected");
+        headerSpan.getStyle().set("font-weight", "bold").set("font-size", "16px");
+
+        com.vaadin.flow.component.html.Pre contentPre = new com.vaadin.flow.component.html.Pre(message.toString());
+        contentPre.getStyle().set("white-space", "pre-wrap");
+
+        Button closeButton = new Button("OK, Proceed", e -> notification.close());
+        closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        notificationLayout.add(headerSpan, contentPre, closeButton);
+        notification.add(notificationLayout);
+        notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
+        notification.open();
     }
 
     /**

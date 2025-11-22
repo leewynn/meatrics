@@ -4,12 +4,15 @@ import java.time.LocalDateTime;
 
 /**
  * Customer entity representing the customers table
+ * Supports both individual companies and groups
  */
 public class Customer {
     private Long customerId;
     private String customerCode;
     private String customerName;
     private String customerRating;
+    private String entityType; // 'GROUP' or 'COMPANY'
+    private Long parentId; // Reference to parent group (if this is a company in a group)
     private String notes;
     private LocalDateTime createdDate;
     private LocalDateTime modifiedDate;
@@ -72,5 +75,42 @@ public class Customer {
 
     public void setModifiedDate(LocalDateTime modifiedDate) {
         this.modifiedDate = modifiedDate;
+    }
+
+    public String getEntityType() {
+        return entityType;
+    }
+
+    public void setEntityType(String entityType) {
+        this.entityType = entityType;
+    }
+
+    public Long getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
+    }
+
+    /**
+     * Check if this customer is a group
+     */
+    public boolean isGroup() {
+        return "GROUP".equals(entityType);
+    }
+
+    /**
+     * Check if this customer belongs to a group
+     */
+    public boolean belongsToGroup() {
+        return parentId != null;
+    }
+
+    /**
+     * Check if this customer is a standalone company
+     */
+    public boolean isStandaloneCompany() {
+        return "COMPANY".equals(entityType) && parentId == null;
     }
 }

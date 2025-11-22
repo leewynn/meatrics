@@ -26,7 +26,7 @@ public class PricingRuleService {
     }
 
     /**
-     * Get all pricing rules ordered by priority
+     * Get all pricing rules ordered by execution order
      */
     public List<PricingRule> getAllRules() {
         return pricingRuleRepository.findAll();
@@ -114,24 +114,22 @@ public class PricingRuleService {
      * Find products that match a rule's condition
      */
     private List<ProductCost> findMatchingProducts(String conditionType, String conditionValue) {
-        List<ProductCost> allProducts = productCostRepository.findAll();
-
         switch (conditionType) {
             case "CATEGORY":
                 // Match by primary_group field
-                return allProducts.stream()
-                    .filter(p -> p.getPrimaryGroup() != null
-                        && conditionValue != null
-                        && p.getPrimaryGroup().equalsIgnoreCase(conditionValue))
-                    .collect(Collectors.toList());
+                if (conditionValue == null) {
+                    return List.of();
+                }
+                return productCostRepository.findByPrimaryGroup(conditionValue);
 
             case "PRODUCT_CODE":
                 // Match by exact product code
-                return allProducts.stream()
-                    .filter(p -> p.getProductCode() != null
-                        && conditionValue != null
-                        && p.getProductCode().equalsIgnoreCase(conditionValue))
-                    .collect(Collectors.toList());
+                if (conditionValue == null) {
+                    return List.of();
+                }
+                return productCostRepository.findByProductCode(conditionValue)
+                    .map(List::of)
+                    .orElse(List.of());
 
             default:
                 return List.of();

@@ -29,7 +29,7 @@ import org.jooq.impl.TableImpl;
 
 /**
  * Aggregated line items grouped by customer and product for pricing sessions
- * view
+ * view. Includes category, unit, last_price, and current_cost.
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class VGroupedLineItems extends TableImpl<VGroupedLineItemsRecord> {
@@ -70,6 +70,16 @@ public class VGroupedLineItems extends TableImpl<VGroupedLineItemsRecord> {
     public final TableField<VGroupedLineItemsRecord, String> PRODUCT_DESCRIPTION = createField(DSL.name("product_description"), SQLDataType.VARCHAR(255), this, "");
 
     /**
+     * The column <code>public.v_grouped_line_items.category</code>.
+     */
+    public final TableField<VGroupedLineItemsRecord, String> CATEGORY = createField(DSL.name("category"), SQLDataType.VARCHAR(100), this, "");
+
+    /**
+     * The column <code>public.v_grouped_line_items.unit</code>.
+     */
+    public final TableField<VGroupedLineItemsRecord, String> UNIT = createField(DSL.name("unit"), SQLDataType.VARCHAR(20), this, "");
+
+    /**
      * The column <code>public.v_grouped_line_items.total_quantity</code>.
      */
     public final TableField<VGroupedLineItemsRecord, BigDecimal> TOTAL_QUANTITY = createField(DSL.name("total_quantity"), SQLDataType.NUMERIC, this, "");
@@ -84,21 +94,48 @@ public class VGroupedLineItems extends TableImpl<VGroupedLineItemsRecord> {
      */
     public final TableField<VGroupedLineItemsRecord, BigDecimal> TOTAL_COST = createField(DSL.name("total_cost"), SQLDataType.NUMERIC, this, "");
 
+    /**
+     * The column <code>public.v_grouped_line_items.last_price</code>.
+     */
+    public final TableField<VGroupedLineItemsRecord, BigDecimal> LAST_PRICE = createField(DSL.name("last_price"), SQLDataType.NUMERIC, this, "");
+
+    /**
+     * The column <code>public.v_grouped_line_items.current_cost</code>.
+     */
+    public final TableField<VGroupedLineItemsRecord, BigDecimal> CURRENT_COST = createField(DSL.name("current_cost"), SQLDataType.NUMERIC(19, 6), this, "");
+
+    /**
+     * The column <code>public.v_grouped_line_items.customer_id</code>.
+     */
+    public final TableField<VGroupedLineItemsRecord, Long> CUSTOMER_ID = createField(DSL.name("customer_id"), SQLDataType.BIGINT, this, "");
+
     private VGroupedLineItems(Name alias, Table<VGroupedLineItemsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
 
     private VGroupedLineItems(Name alias, Table<VGroupedLineItemsRecord> aliased, Field<?>[] parameters, Condition where) {
-        super(alias, null, aliased, parameters, DSL.comment("Aggregated line items grouped by customer and product for pricing sessions view"), TableOptions.view("""
-        CREATE VIEW "v_grouped_line_items" AS  SELECT imported_line_items.customer_code,
-          imported_line_items.customer_name,
-          imported_line_items.product_code,
-          imported_line_items.product_description,
-          sum(imported_line_items.quantity) AS total_quantity,
-          sum(imported_line_items.amount) AS total_amount,
-          sum(imported_line_items.cost) AS total_cost
-         FROM imported_line_items
-        GROUP BY imported_line_items.customer_code, imported_line_items.customer_name, imported_line_items.product_code, imported_line_items.product_description;
+        super(alias, null, aliased, parameters, DSL.comment("Aggregated line items grouped by customer and product for pricing sessions view. Includes category, unit, last_price, and current_cost."), TableOptions.view("""
+        CREATE VIEW "v_grouped_line_items" AS  SELECT ili.customer_code,
+          ili.customer_name,
+          ili.product_code,
+          ili.product_description,
+          pc.primary_group AS category,
+          pc.unit_of_measure AS unit,
+          sum(ili.quantity) AS total_quantity,
+          sum(ili.amount) AS total_amount,
+          sum(ili.cost) AS total_cost,
+          ( SELECT (ili2.amount / NULLIF(ili2.quantity, (0)::numeric))
+                 FROM imported_line_items ili2
+                WHERE (((ili2.customer_code)::text = (ili.customer_code)::text) AND ((ili2.product_code)::text = (ili.product_code)::text))
+                ORDER BY ili2.transaction_date DESC, ili2.import_date DESC
+               LIMIT 1) AS last_price,
+          pc.standard_cost AS current_cost,
+          c.customer_id
+         FROM ((imported_line_items ili
+           LEFT JOIN product_costs pc ON (((pc.product_code)::text = (ili.product_code)::text)))
+           LEFT JOIN customers c ON (((c.customer_code)::text = (ili.customer_code)::text)))
+        WHERE ((ili.customer_code IS NOT NULL) AND (ili.product_code IS NOT NULL))
+        GROUP BY ili.customer_code, ili.customer_name, ili.product_code, ili.product_description, pc.primary_group, pc.unit_of_measure, pc.standard_cost, c.customer_id;
         """), where);
     }
 

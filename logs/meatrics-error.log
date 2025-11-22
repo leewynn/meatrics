@@ -1,6 +1,23 @@
-2025-11-15 17:47:18.198 [http-nio-8080-exec-3] ERROR c.v.flow.server.DefaultErrorHandler - Unexpected error: Cannot invoke "java.lang.Double.doubleValue()" because the return value of "com.vaadin.flow.component.textfield.NumberField.getValue()" is null
-java.lang.NullPointerException: Cannot invoke "java.lang.Double.doubleValue()" because the return value of "com.vaadin.flow.component.textfield.NumberField.getValue()" is null
-	at com.meatrics.pricing.analysis.MarginAnalysisView.lambda$openThresholdSettings$31f1e77d$1(MarginAnalysisView.java:809)
+2025-11-19 00:15:01.985 [http-nio-8080-exec-10] ERROR c.m.p.ui.importer.ImportPricingView - Error importing files
+java.lang.IllegalStateException: Cannot get a STRING value from a NUMERIC cell
+	at org.apache.poi.xssf.usermodel.XSSFCell.typeMismatch(XSSFCell.java:984)
+	at org.apache.poi.xssf.usermodel.XSSFCell.getRichStringCellValue(XSSFCell.java:311)
+	at org.apache.poi.xssf.usermodel.XSSFCell.getStringCellValue(XSSFCell.java:280)
+	at com.meatrics.pricing.importer.PricingImportService.isClientCodeAndNameLine(PricingImportService.java:308)
+	at com.meatrics.pricing.importer.PricingImportService.readExcelFile(PricingImportService.java:232)
+	at com.meatrics.pricing.importer.PricingImportService.importFromInputStream(PricingImportService.java:165)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:360)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:728)
+	at com.meatrics.pricing.importer.PricingImportService$$SpringCGLIB$$0.importFromInputStream(<generated>)
+	at com.meatrics.pricing.ui.importer.ImportPricingView.importFiles(ImportPricingView.java:532)
+	at com.meatrics.pricing.ui.importer.ImportPricingView.lambda$createPricingImportSection$820954e5$1(ImportPricingView.java:148)
 	at com.vaadin.flow.component.ComponentEventBus.fireEventForListener(ComponentEventBus.java:244)
 	at com.vaadin.flow.component.ComponentEventBus.handleDomEvent(ComponentEventBus.java:501)
 	at com.vaadin.flow.component.ComponentEventBus.lambda$addDomTrigger$dd1b7957$1(ComponentEventBus.java:303)
